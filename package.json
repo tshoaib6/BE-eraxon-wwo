@@ -1,0 +1,34 @@
+{
+  "name": "@eraxon-wwo/source",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "start": "nodemon --exec ts-node server.ts",
+    "lint": "eslint . --ext .ts"
+  },
+  "private": true,
+  "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^2.4.3",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "ioredis": "latest",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "latest",
+    "node-plugin": "1.0.0",
+    "nodemailer": "^6.9.14"
+  },
+  "devDependencies": {
+    "@nx/workspace": "19.5.0",
+    "@types/cors": "latest",
+    "@types/express": "latest",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "latest",
+    "@types/nodemailer": "^6.4.15",
+    "nodemon": "latest",
+    "nx": "19.5.0",
+    "ts-node": "latest",
+    "typescript": "latest"
+  }
+}
