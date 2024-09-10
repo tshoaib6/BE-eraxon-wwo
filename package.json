@@ -8,19 +8,18 @@
   },
   "private": true,
   "dependencies": {
-    "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^2.4.3",
-    "cors": "latest",
+    "cors": "^2.8.5",
     "dotenv": "latest",
     "express": "latest",
     "ioredis": "latest",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "latest",
-    "node-plugin": "1.0.0",
-    "nodemailer": "^6.9.14"
+    "nodemailer": "^6.9.15"
   },
   "devDependencies": {
     "@nx/workspace": "19.5.0",
+    "@types/bcryptjs": "^2.4.6",
     "@types/cors": "latest",
     "@types/express": "latest",
     "@types/jsonwebtoken": "^9.0.6",
