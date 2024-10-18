@@ -9,12 +9,15 @@
   "private": true,
   "dependencies": {
     "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.3",
     "cors": "^2.8.5",
     "dotenv": "latest",
     "express": "latest",
     "ioredis": "latest",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "latest",
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0",
     "nodemailer": "^6.9.15"
   },
   "devDependencies": {
@@ -23,6 +26,7 @@
     "@types/cors": "latest",
     "@types/express": "latest",
     "@types/jsonwebtoken": "^9.0.6",
+    "@types/multer": "^1.4.12",
     "@types/node": "latest",
     "@types/nodemailer": "^6.4.15",
     "nodemon": "latest",
