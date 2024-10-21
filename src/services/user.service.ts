@@ -94,7 +94,7 @@ export const loginUser = async (
     { userId: user._id, email: user.email },
     process.env.JWT_SECRET as string,
     {
-      expiresIn: '15m'
+      expiresIn: '1h'
     }
   )
 

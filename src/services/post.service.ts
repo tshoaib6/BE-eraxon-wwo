@@ -38,7 +38,7 @@ import Post from '../models/post.model';
 interface PostData {
     userId: string; 
     content: string;
-    mediaUrl?: string; 
+    mediaUrl?: string[];
 
 }
 

@@ -13,6 +13,8 @@ router.get('/posts', getPosts)
 // local storage route 
 // router.post('/create-post/local', verifyJwt, uploadLocal.single('media'), createPost);
 
-router.post('/create-post',verifyJwt, upload.single('media'), createPost);
+// router.post('/create-post',verifyJwt, upload.single('media'), createPost);
+router.post('/create-post', verifyJwt, upload.array('media'), createPost);
+
 
 export default router;

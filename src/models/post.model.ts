@@ -17,11 +17,11 @@ const PostSchema: Schema<IPost> = new Schema(
       required: true,
       trim: true
     },
-    mediaUrl: {
+    mediaUrl: [{
       type: String, 
       required: false, 
       trim: true 
-    }
+    }]
   },
   {
     timestamps: true 

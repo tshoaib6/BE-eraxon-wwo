@@ -1,55 +1,119 @@
-import { Request, Response } from 'express'
-import { createPostService } from '../services/post.service'
-import { extractUserIdFromToken } from '../utils/extractUserIdFromToken'
-import Post from '../models/post.model'
-import mongoose from 'mongoose'
+// import { Request, Response } from 'express'
+// import { createPostService } from '../services/post.service'
+// import { extractUserIdFromToken } from '../utils/extractUserIdFromToken'
+// import Post from '../models/post.model'
+// import mongoose from 'mongoose'
 
+// interface MulterRequest extends Request {
+//   file?: Express.Multer.File & { path: string } // Extend to ensure file path from Cloudinary
+// }
+
+// export const createPost = async (
+//   req: Request, // req now includes Multer types
+//   res: Response
+// ): Promise<Response> => {
+//   try {
+//     const { content } = req.body
+//     const token =
+//       req.cookies?.token || req.headers['authorization']?.split(' ')[1]
+
+//     if (!token) {
+//       return res
+//         .status(401)
+//         .json({ message: 'Authorization token is required' })
+//     }
+
+//     const userId = extractUserIdFromToken(
+//       JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
+//     )
+
+//     if (!content && !req.file) {
+//       return res.status(400).json({
+//         message: 'Content or media is required to create a post'
+//       })
+//     }
+
+//     const mediaUrl = req.file ? req.file.path : undefined // Correctly handle file
+
+//     const postData = { userId, content, mediaUrl }
+
+//     const post = await createPostService(postData)
+
+//     return res.status(201).json({ message: 'Post created successfully', post })
+//   } catch (error) {
+//     console.error('Error creating post:', error)
+//     const errorMessage =
+//       error instanceof Error ? error.message : 'Internal Server Error'
+//     return res.status(500).json({ message: errorMessage })
+//   }
+// }
+
+// ABOVE CODE IS WITHOUT LOCAL STORAGE FUNCTIONLITY USING CLOUDINARY for creating posts
+
+// testing purpose 
+
+import { Request, Response } from 'express';
+import { createPostService } from '../services/post.service';
+import { extractUserIdFromToken } from '../utils/extractUserIdFromToken';
+import Post from '../models/post.model';
+import mongoose from 'mongoose';
+import { cloudinary } from '../middleware/cloudinary'; // Ensure correct Cloudinary import
+
+// Extend Request to include file path
 interface MulterRequest extends Request {
-  file?: Express.Multer.File & { path: string } // Extend to ensure file path from Cloudinary
+  files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] }; // Allow multiple files as an array or an object
 }
 
+// The createPost function
 export const createPost = async (
-  req: Request, // req now includes Multer types
+  req: MulterRequest,
   res: Response
 ): Promise<Response> => {
   try {
-    const { content } = req.body
-    const token =
-      req.cookies?.token || req.headers['authorization']?.split(' ')[1]
+    const { content } = req.body;
+    const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1];
 
     if (!token) {
-      return res
-        .status(401)
-        .json({ message: 'Authorization token is required' })
+      return res.status(401).json({ message: 'Authorization token is required' });
     }
 
     const userId = extractUserIdFromToken(
       JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
-    )
+    );
 
-    if (!content && !req.file) {
+    if (!content && (!req.files || (Array.isArray(req.files) ? req.files.length === 0 : Object.values(req.files).flat().length === 0))) {
       return res.status(400).json({
-        message: 'Content or media is required to create a post'
-      })
+        message: 'Content or media is required to create a post',
+      });
     }
 
-    const mediaUrl = req.file ? req.file.path : undefined // Correctly handle file
+    // Store media URLs
+    const mediaUrls: string[] = [];
 
-    const postData = { userId, content, mediaUrl }
+    // Check if files exist in the request
+    if (req.files) {
+      const filesArray = Array.isArray(req.files) ? req.files : Object.values(req.files).flat(); // Flatten to get all files
 
-    const post = await createPostService(postData)
+      filesArray.forEach(file => {
+        if (file.path) {
+          mediaUrls.push(file.path); // Collecting media URLs
+        }
+      });
+    }
 
-    return res.status(201).json({ message: 'Post created successfully', post })
+    // Prepare post data with userId, content, and mediaUrls
+    const postData = { userId, content, mediaUrl: mediaUrls };
+
+    // Create the post by calling the service
+    const post = await createPostService(postData);
+
+    return res.status(201).json({ message: 'Post created successfully', post });
   } catch (error) {
-    console.error('Error creating post:', error)
-    const errorMessage =
-      error instanceof Error ? error.message : 'Internal Server Error'
-    return res.status(500).json({ message: errorMessage })
+    console.error('Error creating post:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+    return res.status(500).json({ message: errorMessage });
   }
-}
-
-// ABOVE CODE IS WITHOUT LOCAL STORAGE FUNCTIONLITY USING CLOUDINARY for creating posts
-
+};
 
 
 
