@@ -86,7 +86,6 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
         gender: { type: String, required: false },
         placeOfBirth: { type: String, required: false },
         placeOfDeath: { type: String, required: false },
-        residence: { type: String, required: false },
       },
     },
     step2: {
@@ -146,7 +145,7 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
     },
   },
   {
-    timestamps: true, // Automatically manage createdAt and updatedAt fields
+    timestamps: true,
   }
 );
 
