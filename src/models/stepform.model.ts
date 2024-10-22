@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface StepData extends Document {
   userId: mongoose.Schema.Types.ObjectId; // Reference to the User who filled the form
+  status: 'drafted' | 'submitted'; 
   step1: {
     basicInfo: {
       nameOfDeceased?: string;
@@ -10,9 +11,7 @@ export interface StepData extends Document {
       gender?: string;
       placeOfBirth?: string;
       placeOfDeath?: string;
-      residence?: string;
     };
-    status: 'drafted' | 'submitted'; // Status of Step 1
   };
   step2: {
     family: {
@@ -29,7 +28,6 @@ export interface StepData extends Document {
         memberImage?: string | File | null;
       }[];
     };
-    status: 'drafted' | 'submitted'; // Status of Step 2
   };
   step3: {
     eventName: string;
@@ -45,7 +43,6 @@ export interface StepData extends Document {
     contactPhoneNumber: string;
     timeZone: string;
     eventViewingLink: string;
-    status: 'drafted' | 'submitted'; // Status of Step 3
   };
   step4: {
     personalDetails: {
@@ -61,13 +58,11 @@ export interface StepData extends Document {
       hobbies?: string;
       interests?: string;
     };
-    status: 'drafted' | 'submitted'; // Status of Step 4
   };
   step5: {
     fileSrc: string;
     yearTaken: string;
     description: string;
-    status: 'drafted' | 'submitted'; // Status of Step 5
   };
 }
 
@@ -78,6 +73,11 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
       ref: 'User', // Reference to the User model
       required: true,
     },
+    status: {
+      type: String,
+      enum: ['drafted', 'submitted'],
+      default: 'drafted', // Overall status for the form
+    },
     step1: {
       basicInfo: {
         nameOfDeceased: { type: String, required: false },
@@ -87,11 +87,6 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
         placeOfBirth: { type: String, required: false },
         placeOfDeath: { type: String, required: false },
         residence: { type: String, required: false },
-      },
-      status: {
-        type: String,
-        enum: ['drafted', 'submitted'],
-        default: 'drafted',
       },
     },
     step2: {
@@ -113,11 +108,6 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
           },
         ],
       },
-      status: {
-        type: String,
-        enum: ['drafted', 'submitted'],
-        default: 'drafted',
-      },
     },
     step3: {
       eventName: { type: String, required: false },
@@ -133,11 +123,6 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
       contactPhoneNumber: { type: String, required: false },
       timeZone: { type: String, required: false },
       eventViewingLink: { type: String, required: false },
-      status: {
-        type: String,
-        enum: ['drafted', 'submitted'],
-        default: 'drafted',
-      },
     },
     step4: {
       personalDetails: {
@@ -153,21 +138,11 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
         hobbies: { type: String, required: false },
         interests: { type: String, required: false },
       },
-      status: {
-        type: String,
-        enum: ['drafted', 'submitted'],
-        default: 'drafted',
-      },
     },
     step5: {
       fileSrc: { type: String, required: false },
       yearTaken: { type: String, required: false },
       description: { type: String, required: false },
-      status: {
-        type: String,
-        enum: ['drafted', 'submitted'],
-        default: 'drafted',
-      },
     },
   },
   {

@@ -2,7 +2,7 @@ import mongoose, { Schema, Document } from 'mongoose'
 export interface IPost extends Document {
   userId: mongoose.Schema.Types.ObjectId; 
   content: string;
-  mediaUrl?: string; 
+  mediaUrl?: string[]; 
 }
 
 const PostSchema: Schema<IPost> = new Schema(
