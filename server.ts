@@ -2,6 +2,10 @@ import app from './app';
 import redis from './redis';
 import mongoose from 'mongoose';
 import cors from 'cors';
+const express = require('express');
+import { Request, Response } from 'express';
+
+
 
 const port = process.env.PORT || 3000;
 const dbUrl = process.env.MONGO_URI || 'mongodb://localhost:27017/test';
