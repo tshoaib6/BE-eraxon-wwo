@@ -265,7 +265,7 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
     },
     step2: {
       family: {
-        survivingFamilyMembers: [
+        survivingFamily: [
           {
             memberName: { type: String, required: false },
             lastName: { type: String, required: false }, // Added lastName
@@ -274,7 +274,7 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
             memberImage: { type: String, required: false }, // Retaining memberImage
           },
         ],
-        predeceasedFamilyMembers: [
+        predeceasedFamily: [
           {
             memberName: { type: String, required: false },
             relation: { type: String, required: false },
@@ -305,7 +305,7 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
     },
     step4: {
       personalDetails: {
-        lifeStory: { type: String, required: true }, 
+        lifeStory: { type: String, required: false }, 
         education: [
           {
             schoolName: { type: String, required: false },
