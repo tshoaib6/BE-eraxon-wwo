@@ -75,8 +75,8 @@ const stepFormUpload = multer({
 
 // Define middleware for handling multiple file fields
 const stepFormUploadMiddleware: RequestHandler = stepFormUpload.fields([
-  { name: 'image', maxCount: 5 }, 
-  { name: 'image', maxCount: 5 }, // Handle predeceased images
+  { name: 'memberImage', maxCount: 5 }, 
+  // { name: 'image', maxCount: 5 }, // Handle predeceased images
   { name: 'file', maxCount: 5 },
 ]);
 

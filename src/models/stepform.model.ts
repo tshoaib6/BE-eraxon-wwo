@@ -185,14 +185,14 @@ export interface StepData extends Document {
   };
   step2: {
     family: {
-      survivingFamilyMembers?: {
+      survivingFamily?: {
         memberName?: string;
         lastName?: string; // Added lastName
         relation?: string;
         note?: string;
         memberImage?: string | File | null; // Retain memberImage in each family member object
       }[]; // Changed to `survivingFamilyMembers` to match frontend
-      predeceasedFamilyMembers?: {
+      predeceasedFamily?: {
         memberName?: string;
         relation?: string;
         note?: string;
@@ -323,8 +323,8 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
     step5: {
       mediaFiles: [
         {
-          file: { type: String, required: true }, 
-          date: { type: String, required: true }, 
+          file: { type: String, required: false }, 
+          date: { type: String, required: false }, 
           note: { type: String, required: false, maxlength: 500 }, 
         },
       ],
