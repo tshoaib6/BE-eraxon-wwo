@@ -1,45 +1,36 @@
-import { Request, Response } from 'express';
-import Step from '../models/stepform.model';
-import { extractUserIdFromToken } from '../utils/extractUserIdFromToken';
-import CombinedForm from '../models/stepform.model';
-interface UploadedFiles {
-  memberImage?: Express.Multer.File[];
-  predeceasedImage?: Express.Multer.File[];
-  file?: Express.Multer.File[];
-}
-
+import { Request, Response } from 'express'
+import Step from '../models/stepform.model'
+import { extractUserIdFromToken } from '../utils/extractUserIdFromToken'
+import CombinedForm from '../models/stepform.model'
 
 interface UploadedFiles {
-  memberImage?: Express.Multer.File[];
-  file?: Express.Multer.File[];
+  memberImage?: Express.Multer.File[]
+  file?: Express.Multer.File[]
 }
 
-// Define the structure for the family member
 interface FamilyMember {
-  memberName?: string;
-  relation: string;
-  note?: string;
-  memberImage?: string;
+  memberName?: string
+  relation: string
+  note?: string
+  memberImage?: string
 }
 
-// Define the parsed data structure
 interface ParsedData {
-  basicInfo: object;
+  basicInfo: object
   family: {
-    survivingFamily: FamilyMember[];
-    predeceasedFamily?: FamilyMember[];
-  };
-  memorialServices?: object;
-  personalDetails?: object;
-  mediaFiles?: object;
-  status?: string;
+    survivingFamily: FamilyMember[]
+    predeceasedFamily?: FamilyMember[]
+  }
+  memorialServices?: object
+  personalDetails?: object
+  mediaFiles?: { file?: string; date?: string; note?: string }[]
+  status?: string
 }
 
-// Define the request type to include the data property
 interface RequestWithBody extends Request {
   body: {
-    data?: string;
-  };
+    data?: string
+  }
 }
 
 export const createOrUpdateStep = async (
@@ -48,46 +39,68 @@ export const createOrUpdateStep = async (
 ): Promise<Response> => {
   try {
     const token =
-      req.cookies?.token || req.headers['authorization']?.split(' ')[1];
+      req.cookies?.token || req.headers['authorization']?.split(' ')[1]
     const userId = extractUserIdFromToken(
       JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
-    );
+    )
 
     if (!userId) {
-      return res.status(401).json({ message: 'Authorization token is required' });
+      return res
+        .status(401)
+        .json({ message: 'Authorization token is required' })
     }
 
     // Parse the nested data JSON if it's present
-    let parsedData: ParsedData;
+    let parsedData: ParsedData
     if (req.body.data) {
       try {
-        parsedData = JSON.parse(req.body.data);
-        console.log('Parsed data:', parsedData);
+        parsedData = JSON.parse(req.body.data)
+        console.log('Parsed data:', parsedData)
       } catch (parseError) {
-        console.error('Error parsing req.body.data:', parseError);
-        return res.status(400).json({ message: 'Invalid data format' });
+        console.error('Error parsing req.body.data:', parseError)
+        return res.status(400).json({ message: 'Invalid data format' })
       }
     } else {
-      return res.status(400).json({ message: 'Data field is required' });
+      return res.status(400).json({ message: 'Data field is required' })
     }
 
     // Log surviving family if present
-    const survivingFamily = parsedData.family?.survivingFamily || [];
-    console.log("Surviving family:", survivingFamily);
+    const survivingFamily = parsedData.family?.survivingFamily || []
+    const predeceasedFamily = parsedData.family?.predeceasedFamily || []
+    const mediaFiles = parsedData.mediaFiles || []
 
-    const uploadedFiles: UploadedFiles = (req.files as UploadedFiles) || {};
-    const memberImages = uploadedFiles.memberImage || [];
-    const files = uploadedFiles.file || [];
+    console.log('Surviving family:', survivingFamily)
 
-    console.log('Files received:', files);
-    console.log('Member Images:', memberImages);
+    const uploadedFiles: UploadedFiles = (req.files as UploadedFiles) || {}
+    const memberImages = uploadedFiles.memberImage || []
+    const files = uploadedFiles.file || []
+    console.log('result from request . file:', req.file)
+
+    // console.log('Files received:', files);
+    // console.log('Member Images:', memberImages);
+    console.log('File Images from frontend:', files)
 
     // Map member images to surviving family members
     const updatedSurvivingFamily = survivingFamily.map((member, index) => ({
       ...member,
       memberImage: memberImages[index]?.path || null // Set the path if it exists
-    }));
+    }))
+    const updatedpredeceasedFamily = predeceasedFamily.map((member, index) => ({
+      ...member,
+      memberImage: memberImages[index]?.path || null // Set the path if it exists
+    }))
 
+    const updatedmediaFiles = mediaFiles.map((file, index) => ({
+      ...file,
+      file: files[index]?.path || null // Set the path if it exists
+    }))
+
+    // tried this one too
+    // const validFiles = parsedData.mediaFiles?.map(mediaFile => ({
+    //   file: mediaFile.file || null,
+    //   date: mediaFile.date || new Date().toISOString(),
+    //   note: mediaFile.note || '',
+    // })).filter(mediaFile => mediaFile.file) || [];
     // Create or update the step data
     const existingStep = await Step.findOneAndUpdate(
       { userId },
@@ -96,38 +109,35 @@ export const createOrUpdateStep = async (
           basicInfo: parsedData.basicInfo,
           family: {
             ...parsedData.family,
-            survivingFamily: updatedSurvivingFamily // Update with new member images
+            survivingFamily: updatedSurvivingFamily,
+            predeceasedFamily: updatedpredeceasedFamily // Update with new member images
           },
           memorialServices: parsedData.memorialServices,
           personalDetails: parsedData.personalDetails,
-          mediaFiles: parsedData.mediaFiles,
-          status: parsedData.status,
-        },
-        $push: {
-          'mediaFiles': {
-            $each: files.map(file => ({
-              file: file.path,
-              date: new Date().toISOString()
-            }))
-          }
+          mediaFiles: {
+            ...parsedData.mediaFiles,
+            files: updatedmediaFiles
+          },
+          status: parsedData.status
         }
       },
       { new: true, upsert: true }
-    );
+    )
 
     return res.status(existingStep ? 200 : 201).json({
       message: existingStep
         ? 'Steps data updated successfully'
         : 'Steps data created successfully',
       steps: existingStep
-    });
+    })
   } catch (error) {
-    console.error('Error in createOrUpdateStep:', error);
+    console.error('Error in createOrUpdateStep:', error)
     const errorMessage =
-      error instanceof Error ? error.message : 'Internal Server Error';
-    return res.status(500).json({ message: errorMessage });
+      error instanceof Error ? error.message : 'Internal Server Error'
+    return res.status(500).json({ message: errorMessage })
   }
-};
+  
+}
 
 
 
@@ -136,7 +146,24 @@ export const createOrUpdateStep = async (
 
 
 
-// below are get apis 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// below are get apis
 
 export const getStepDataByUserID = async (
   req: Request,
@@ -166,7 +193,6 @@ export const getStepDataByUserID = async (
         .json({ message: 'No step data found for the user' })
     }
 
-    // Include the status of each step data
     return res.status(200).json({
       message: 'Step data retrieved successfully',
       steps: userStepData,
@@ -187,13 +213,12 @@ export const getStep = async (
   res: Response
 ): Promise<Response> => {
   try {
-    // Pagination parameters
     const page = parseInt(req.query.page as string) || 1
     const limit = parseInt(req.query.limit as string) || 10
     const skip = (page - 1) * limit
 
     // Fetch all step data with pagination
-    const allSteps = await Step.find().select('step1.basicInfo status')
+    const allSteps = await Step.find().select('basicInfo status')
 
     if (!allSteps || allSteps.length === 0) {
       return res.status(404).json({ message: 'No step data found' })
@@ -205,7 +230,6 @@ export const getStep = async (
     // Slice the shuffled results to implement pagination
     const paginatedSteps = shuffledSteps.slice(skip, skip + limit)
 
-    // Count total records for pagination
     const totalRecords = allSteps.length
 
     return res.status(200).json({
@@ -213,8 +237,8 @@ export const getStep = async (
       steps: paginatedSteps,
       pagination: {
         currentPage: page,
-        totalPages: Math.ceil(totalRecords / limit), // Total pages
-        totalRecords // Total number of records
+        totalPages: Math.ceil(totalRecords / limit),
+        totalRecords
       }
     })
   } catch (error) {
@@ -232,9 +256,8 @@ export const getRecordById = async (
   res: Response
 ): Promise<Response> => {
   try {
-    const { recordId } = req.params // Get the record ID from the request parameters
+    const { recordId } = req.params
 
-    // Find the record by ID
     const recordData = await CombinedForm.findById(recordId)
 
     if (!recordData) {
@@ -245,7 +268,7 @@ export const getRecordById = async (
 
     return res.status(200).json({
       message: 'Record data retrieved successfully',
-      record: recordData // Return all step data for the specified ID
+      record: recordData
     })
   } catch (error) {
     console.error('Error in getRecordById:', error)
