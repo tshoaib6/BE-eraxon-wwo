@@ -4,7 +4,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface StepData extends Document {
   userId: mongoose.Schema.Types.ObjectId; 
   status: 'drafted' | 'submitted'; 
-  step1: {
+ 
     basicInfo: {
       nameOfDeceased?: string;
       dateOfBirth?: string | null;
@@ -12,26 +12,26 @@ export interface StepData extends Document {
       gender?: string;
       placeOfBirth?: string;
       placeOfDeath?: string;
-    };
+
   };
-  step2: {
+
     family: {
       survivingFamily?: {
+        memberImage?: string; // Retain memberImage in each family member object
         memberName?: string;
         lastName?: string; // Added lastName
         relation?: string;
         note?: string;
-        memberImage?: string | File | null; // Retain memberImage in each family member object
       }[]; // Changed to `survivingFamilyMembers` to match frontend
       predeceasedFamily?: {
         memberName?: string;
         relation?: string;
         note?: string;
-        memberImage?: string | File | null; // Retain memberImage in each family member object
+        memberImage?: string; // Retain memberImage in each family member object
       }[]; // Changed to `predeceasedFamilyMembers` to match frontend
-    };
+  
   };
-  step3: {
+
     memorialServices: {
       eventName: string;
       specialInstructions: string;
@@ -47,8 +47,8 @@ export interface StepData extends Document {
       timeZone: string;
       eventViewingLink: string;
     }[]; 
-  };
-  step4: {
+
+
     personalDetails: {
       lifeStory: string; 
       education: {
@@ -61,15 +61,15 @@ export interface StepData extends Document {
       careerHighlights?: string;
       hobbies?: string;
       interests?: string;
-    };
+
   };
-  step5: {
+
     mediaFiles?: {
       file: string; 
       date: string; 
       note?: string; 
     }[];
-  };
+ 
 }
 
 const CombinedFormSchema: Schema<StepData> = new Schema(
@@ -84,7 +84,7 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
       enum: ['drafted', 'submitted'],
       default: 'drafted', 
     },
-    step1: {
+
       basicInfo: {
         nameOfDeceased: { type: String, required: false },
         dateOfBirth: { type: String, required: false },
@@ -92,17 +92,17 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
         gender: { type: String, required: false },
         placeOfBirth: { type: String, required: false },
         placeOfDeath: { type: String, required: false },
-      },
+  
     },
-    step2: {
+  
       family: {
         survivingFamily: [
           {
+            memberImage: { type: String, required: false, }, // Retaining memberImage
             memberName: { type: String, required: false },
             lastName: { type: String, required: false }, // Added lastName
             relation: { type: String, required: false },
             note: { type: String, required: false },
-            memberImage: { type: String, required: false }, // Retaining memberImage
           },
         ],
         predeceasedFamily: [
@@ -114,8 +114,8 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
           },
         ],
       },
-    },
-    step3: {
+  
+  
       memorialServices: [
         {
           eventName: { type: String, required: true },
@@ -133,8 +133,8 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
           eventViewingLink: { type: String, required: false },
         },
       ],
-    },
-    step4: {
+  
+ 
       personalDetails: {
         lifeStory: { type: String, required: false }, 
         education: [
@@ -150,8 +150,8 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
         hobbies: { type: String, required: false },
         interests: { type: String, required: false },
       },
-    },
-    step5: {
+
+    
       mediaFiles: [
         {
           file: { type: String, required: false }, 
@@ -159,7 +159,7 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
           note: { type: String, required: false, maxlength: 500 }, 
         },
       ],
-    },
+   
   },
   {
     timestamps: true,

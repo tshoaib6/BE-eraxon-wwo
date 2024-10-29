@@ -1,69 +1,110 @@
-import { Request, Response } from 'express'
-import Step from '../models/stepform.model'
-import { extractUserIdFromToken } from '../utils/extractUserIdFromToken'
-import CombinedForm from '../models/stepform.model'
+import { Request, Response } from 'express';
+import Step from '../models/stepform.model';
+import { extractUserIdFromToken } from '../utils/extractUserIdFromToken';
+import CombinedForm from '../models/stepform.model';
+interface UploadedFiles {
+  memberImage?: Express.Multer.File[];
+  predeceasedImage?: Express.Multer.File[];
+  file?: Express.Multer.File[];
+}
+
 
 interface UploadedFiles {
-  memberImage?: Express.Multer.File[]
-  predeceasedImage?: Express.Multer.File[]
-  file?: Express.Multer.File[]
+  memberImage?: Express.Multer.File[];
+  file?: Express.Multer.File[];
+}
+
+// Define the structure for the family member
+interface FamilyMember {
+  memberName?: string;
+  relation: string;
+  note?: string;
+  memberImage?: string;
+}
+
+// Define the parsed data structure
+interface ParsedData {
+  basicInfo: object;
+  family: {
+    survivingFamily: FamilyMember[];
+    predeceasedFamily?: FamilyMember[];
+  };
+  memorialServices?: object;
+  personalDetails?: object;
+  mediaFiles?: object;
+  status?: string;
+}
+
+// Define the request type to include the data property
+interface RequestWithBody extends Request {
+  body: {
+    data?: string;
+  };
 }
 
 export const createOrUpdateStep = async (
-  req: Request,
+  req: RequestWithBody,
   res: Response
 ): Promise<Response> => {
   try {
     const token =
-      req.cookies?.token || req.headers['authorization']?.split(' ')[1]
+      req.cookies?.token || req.headers['authorization']?.split(' ')[1];
     const userId = extractUserIdFromToken(
       JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
-    )
+    );
 
     if (!userId) {
-      return res
-        .status(401)
-        .json({ message: 'Authorization token is required' })
+      return res.status(401).json({ message: 'Authorization token is required' });
     }
 
     // Parse the nested data JSON if it's present
-    let parsedData
+    let parsedData: ParsedData;
     if (req.body.data) {
       try {
-        parsedData = JSON.parse(req.body.data)
-        console.log('Parsed data:', parsedData)
+        parsedData = JSON.parse(req.body.data);
+        console.log('Parsed data:', parsedData);
       } catch (parseError) {
-        console.error('Error parsing req.body.data:', parseError)
-        return res.status(400).json({ message: 'Invalid data format' })
+        console.error('Error parsing req.body.data:', parseError);
+        return res.status(400).json({ message: 'Invalid data format' });
       }
     } else {
-      return res.status(400).json({ message: 'Data field is required' })
+      return res.status(400).json({ message: 'Data field is required' });
     }
 
-    const { step1, step2, step3, step4, step5, status } = parsedData
-    const uploadedFiles: UploadedFiles = (req.files as UploadedFiles) || {}
-    const memberImages = uploadedFiles.memberImage || []
-    const files = uploadedFiles.file || []
+    // Log surviving family if present
+    const survivingFamily = parsedData.family?.survivingFamily || [];
+    console.log("Surviving family:", survivingFamily);
 
-    console.log('Files received:', files)
-    console.log('Member Images:', memberImages)
+    const uploadedFiles: UploadedFiles = (req.files as UploadedFiles) || {};
+    const memberImages = uploadedFiles.memberImage || [];
+    const files = uploadedFiles.file || [];
 
+    console.log('Files received:', files);
+    console.log('Member Images:', memberImages);
+
+    // Map member images to surviving family members
+    const updatedSurvivingFamily = survivingFamily.map((member, index) => ({
+      ...member,
+      memberImage: memberImages[index]?.path || null // Set the path if it exists
+    }));
+
+    // Create or update the step data
     const existingStep = await Step.findOneAndUpdate(
       { userId },
       {
         $set: {
-          step1,
-          step2,
-          step3,
-          step4,
-          step5,
-          status
+          basicInfo: parsedData.basicInfo,
+          family: {
+            ...parsedData.family,
+            survivingFamily: updatedSurvivingFamily // Update with new member images
+          },
+          memorialServices: parsedData.memorialServices,
+          personalDetails: parsedData.personalDetails,
+          mediaFiles: parsedData.mediaFiles,
+          status: parsedData.status,
         },
         $push: {
-          'step2.family.survivingFamily': {
-            $each: memberImages.map(image => ({ memberImage: image.path }))
-          },
-          'step5.mediaFiles': {
+          'mediaFiles': {
             $each: files.map(file => ({
               file: file.path,
               date: new Date().toISOString()
@@ -72,27 +113,21 @@ export const createOrUpdateStep = async (
         }
       },
       { new: true, upsert: true }
-    )
+    );
 
     return res.status(existingStep ? 200 : 201).json({
       message: existingStep
         ? 'Steps data updated successfully'
         : 'Steps data created successfully',
       steps: existingStep
-    })
+    });
   } catch (error) {
-    console.error('Error in createOrUpdateStep:', error)
+    console.error('Error in createOrUpdateStep:', error);
     const errorMessage =
-      error instanceof Error ? error.message : 'Internal Server Error'
-    return res.status(500).json({ message: errorMessage })
+      error instanceof Error ? error.message : 'Internal Server Error';
+    return res.status(500).json({ message: errorMessage });
   }
-}
-
-
-
-
-
-
+};
 
 
 
