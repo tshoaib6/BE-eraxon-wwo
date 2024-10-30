@@ -27,7 +27,12 @@ export const createPost = async (
 
 
   try {
-    const { content } = req.body;
+    const { content,communityId } = req.body;
+    console.log(req.body);
+
+    if (!communityId) {  
+      return res.status(400).json({ message: 'Community ID is required' });
+    }
     const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1];
 
     if (!token) {
@@ -60,7 +65,7 @@ export const createPost = async (
     }
 
     // Prepare post data with userId, content, and mediaUrls
-    const postData = { userId, content, mediaUrl: mediaUrls };
+    const postData = { userId, content, mediaUrl: mediaUrls, communityId: communityId };
 
     // Create the post by calling the service
     const post = await createPostService(postData);
@@ -81,7 +86,27 @@ export const getPosts = async (
   res: Response
 ): Promise<Response> => {
   try {
+
     const posts = await Post.find()
+      .populate('userId', 'firstName lastName email') 
+      .select('content mediaUrl createdAt'); 
+
+    return res.status(200).json(posts);
+  } catch (error) {
+    console.error('Error fetching posts:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+
+
+export const getPostsByCommunity = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
+  try {
+    const { communityId } = req.params;
+
+    const posts = await Post.find({ communityId })
       .populate('userId', 'firstName lastName email') 
       .select('content mediaUrl createdAt'); 
 

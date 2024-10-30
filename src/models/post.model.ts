@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document } from 'mongoose'
 export interface IPost extends Document {
   userId: mongoose.Schema.Types.ObjectId; 
+  communityId: mongoose.Types.ObjectId; // Reference to Community
+
   content: string;
   mediaUrl?: string[]; 
 }
@@ -12,11 +14,17 @@ const PostSchema: Schema<IPost> = new Schema(
       ref: 'User', // Reference to the 'User' model
       required: true
     },
+    communityId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Community',
+      required: true,
+  },
     content: {
       type: String,
       required: true,
       trim: true
     },
+    
     mediaUrl: [{
       type: String, 
       required: false, 

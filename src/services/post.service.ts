@@ -39,6 +39,7 @@ interface PostData {
     userId: string; 
     content: string;
     mediaUrl?: string[];
+    communityId?: string;
 
 }
 
@@ -46,7 +47,9 @@ export const createPostService = async (postData: PostData) => {
     const newPost = new Post({
         userId: postData.userId, 
         content: postData.content,
-        mediaUrl:postData.mediaUrl 
+        mediaUrl:postData.mediaUrl ,
+        communityId:postData.communityId
+
 
     });
 

@@ -1,5 +1,6 @@
 import Community from '../models/community.model'; // Adjust the path as needed
 import { Request, Response } from 'express';
+import Post from '../models/post.model'; // Import the Post model
 
 export const getAllCommunities = async (req: Request, res: Response, err:any) => {
   try {
@@ -15,22 +16,21 @@ export const getAllCommunities = async (req: Request, res: Response, err:any) =>
 
 
 
-export const getPostsByCommunityId = async (req: Request, res: Response,error:any) => {
-  try {
-    const { communityId } = req.params;
-
-    // Find the community by communityId
-    const community = await Community.findOne({ communityId });
-
-    if (!community) {
-      return res.status(404).json({ message: 'Community not found' });
+export const getPostsByCommunityId = async (req: Request, res: Response) => {
+    try {
+      const { communityId } = req.params;
+  
+      // Find the posts by communityId
+      const posts = await Post.find({ communityId });
+  
+      if (!posts || posts.length === 0) {
+        return res.status(404).json({ message: 'No posts found for this community' });
+      }
+  
+      // Return posts for the specified community
+      res.status(200).json(posts);
+    } catch (error) {
+      res.status(500).json({ message: 'Server Error', error: (error as Error).message });
     }
-
-    // Return only a dynamic message with communityId
-    res.status(200).json({ message: `Community ID ${communityId}: Same community people will be able to see each other's data` });
-  } catch (error) {
-    const err = error as Error;
-    res.status(500).json({ message: 'Server Error', error: err.message });
-  }
-};
+  };
 
