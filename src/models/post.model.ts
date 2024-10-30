@@ -22,7 +22,7 @@ const PostSchema: Schema<IPost> = new Schema(
     },
     communityId: {
       type:String,
-      required:true,
+      required:false,
     },
     mediaUrl: [{
       type: String, 

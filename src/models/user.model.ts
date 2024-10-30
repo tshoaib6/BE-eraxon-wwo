@@ -21,7 +21,9 @@ const UserSchema: Schema<IUser> = new Schema(
         return !this.isVerified // Only required if not verified
       }
     },
-    verificationTokenExpiry: { type: Date, required: true }
+    verificationTokenExpiry: { type: Date, required: true },
+    profilePic: { type: String } // Make this optional
+
   },
   {
     timestamps: true

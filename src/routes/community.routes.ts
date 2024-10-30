@@ -4,6 +4,6 @@ import { getAllCommunities,getPostsByCommunityId } from '../controllers/communit
 const router = express.Router();
 
 router.get('/communities', getAllCommunities);
-router.get('/communities/:communityId/posts', getPostsByCommunityId);
+router.get('/community/:communityId?', getPostsByCommunityId);
 
 export default router;

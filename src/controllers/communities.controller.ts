@@ -17,20 +17,32 @@ export const getAllCommunities = async (req: Request, res: Response, err:any) =>
 
 
 export const getPostsByCommunityId = async (req: Request, res: Response) => {
-    try {
-      const { communityId } = req.params;
-  
-      // Find the posts by communityId
+  try {
+    const { communityId } = req.params;
+
+    // If communityId is provided, find posts by communityId
+    if (communityId) {
       const posts = await Post.find({ communityId });
-  
+
       if (!posts || posts.length === 0) {
         return res.status(404).json({ message: 'No posts found for this community' });
       }
-  
-      // Return posts for the specified community
-      res.status(200).json(posts);
-    } catch (error) {
-      res.status(500).json({ message: 'Server Error', error: (error as Error).message });
-    }
-  };
 
+      // Return posts for the specified community
+      return res.status(200).json(posts);
+    }
+
+    // If communityId is not provided, fetch all posts
+    const allPosts = await Post.find();
+
+    if (!allPosts || allPosts.length === 0) {
+      return res.status(404).json({ message: 'No posts found' });
+    }
+
+    // Return all posts
+    return res.status(200).json(allPosts);
+    
+  } catch (error) {
+    return res.status(500).json({ message: 'Server Error', error: (error as Error).message });
+  }
+};
