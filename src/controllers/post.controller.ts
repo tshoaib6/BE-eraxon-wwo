@@ -27,7 +27,9 @@ export const createPost = async (
 
 
   try {
-    const { content,communityId } = req.body;
+    const { content } = req.body;
+    const  communityId  = req.query.communityId as string;; 
+
     console.log(req.body);
 
     if (!communityId) {  
@@ -65,7 +67,7 @@ export const createPost = async (
     }
 
     // Prepare post data with userId, content, and mediaUrls
-    const postData = { userId, content, mediaUrl: mediaUrls, communityId: communityId };
+    const postData = { userId, content, mediaUrl: mediaUrls, communityId };
 
     // Create the post by calling the service
     const post = await createPostService(postData);
