@@ -10,5 +10,7 @@ export interface IUser extends Document {
   isVerified: boolean;
   verificationToken?: string;
   verificationTokenExpiry: Date;
+  resetOTP?: string; // Add this line
+  otpExpires?: Date; // Add this line 
   comparePassword(candidatePassword: string): Promise<boolean>;
 }

@@ -22,7 +22,11 @@ const UserSchema: Schema<IUser> = new Schema(
       }
     },
     verificationTokenExpiry: { type: Date, required: true },
-    profilePic: { type: String } // Make this optional
+    profilePic: { type: String }, // Optional field for profile picture
+
+    // New fields for password reset
+    resetOTP: { type: String }, // Stores the OTP for password reset
+    otpExpires: { type: Date } // Stores OTP expiration time
 
   },
   {
