@@ -122,11 +122,6 @@ export const getPostsByCommunityId = async (req: Request, res: Response) => {
       // Alternatively, if you want records with communityId explicitly set to null, use:
       // query.communityId = null;
       query.communityId = communityId; // Retrieve records with the specific communityId
-    } else {
-      // If communityId is not present, fetch records with communityId that is either null or does not exist
-      query.communityId = { $exists: false }; // To fetch records without communityId
-      // Alternatively, if you want records with communityId explicitly set to null, use:
-      // query.communityId = null;
     }
 
     // Set limit, default to 50 if not provided
