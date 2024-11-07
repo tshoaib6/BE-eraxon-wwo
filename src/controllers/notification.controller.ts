@@ -98,55 +98,88 @@ export const getNotifications = async (req: Request, res: Response): Promise<Res
   // controllers/notification.controller.ts
 
 // Handler to mark a notification as read
-export const markNotificationAsRead = async (req: Request, res: Response): Promise<Response> => {
-    const { id } = req.params;  // Extract notification ID from URL parameters
-    const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+// export const markNotificationAsRead = async (req: Request, res: Response): Promise<Response> => {
+//     const { id } = req.params;  // Extract notification ID from URL parameters
+//     const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
   
-    if (!token) {
-      return res.status(401).json({ message: "Authorization token is required" });
+//     if (!token) {
+//       return res.status(401).json({ message: "Authorization token is required" });
+//     }
+  
+//     try {
+//       // Decode the token and extract user ID (if available)
+//       let userId;
+//       try {
+//         userId = extractUserIdFromToken(
+//           JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
+//         );
+//       } catch (error) {
+//         console.log("Error extracting userId from token:", error);
+//       }
+  
+//       // Find the notification by ID
+//       let notification;
+//       if (userId) {
+//         // If userId is available, check if the notification belongs to the user
+//         notification = await Notification.findOneAndUpdate(
+//           { _id: id, user: userId },  // Ensure it's the correct user's notification
+//           { status: 'read' },
+//           { new: true }  // Return the updated notification
+//         );
+//       } else {
+//         // If userId is not available, allow marking the notification as read regardless of the user
+//         notification = await Notification.findOneAndUpdate(
+//           { _id: id },  // Only match by notification ID, without user filter
+//           { status: 'read' },
+//           { new: true }  // Return the updated notification
+//         );
+//       }
+  
+//       if (!notification) {
+//         return res.status(404).json({ message: 'Notification not found' });
+//       }
+  
+//       // Return the updated notification
+//       return res.status(200).json({
+//         message: 'Notification marked as read',
+//         notification,
+//       });
+//     } catch (error) {
+//       console.error('Error in markNotificationAsRead:', error);
+//       return res.status(500).json({ message: 'Internal Server Error' });
+//     }
+//   };
+export const markNotificationAsRead = async (req:any, res:any) => {
+  const { id } = req.params;
+  const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+
+  console.log("Notification ID:", id);
+  console.log("Token:", token);
+
+  if (!token) {
+    return res.status(401).json({ message: "Authorization token is required" });
+  }
+
+  try {
+    // Find and update notification only by ID
+    const notification = await Notification.findOneAndUpdate(
+      { _id: id },
+      { status: 'read' },
+      { new: true }
+    );
+
+    if (!notification) {
+      console.log("Notification not found. ID:", id);
+      return res.status(404).json({ message: 'Notification not found' });
     }
-  
-    try {
-      // Decode the token and extract user ID (if available)
-      let userId;
-      try {
-        userId = extractUserIdFromToken(
-          JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
-        );
-      } catch (error) {
-        console.log("Error extracting userId from token:", error);
-      }
-  
-      // Find the notification by ID
-      let notification;
-      if (userId) {
-        // If userId is available, check if the notification belongs to the user
-        notification = await Notification.findOneAndUpdate(
-          { _id: id, user: userId },  // Ensure it's the correct user's notification
-          { status: 'read' },
-          { new: true }  // Return the updated notification
-        );
-      } else {
-        // If userId is not available, allow marking the notification as read regardless of the user
-        notification = await Notification.findOneAndUpdate(
-          { _id: id },  // Only match by notification ID, without user filter
-          { status: 'read' },
-          { new: true }  // Return the updated notification
-        );
-      }
-  
-      if (!notification) {
-        return res.status(404).json({ message: 'Notification not found' });
-      }
-  
-      // Return the updated notification
-      return res.status(200).json({
-        message: 'Notification marked as read',
-        notification,
-      });
-    } catch (error) {
-      console.error('Error in markNotificationAsRead:', error);
-      return res.status(500).json({ message: 'Internal Server Error' });
-    }
-  };
-  
+
+    return res.status(200).json({
+      message: 'Notification marked as read',
+      notification,
+    });
+  } catch (error) {
+    console.error('Error in markNotificationAsRead:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};
+

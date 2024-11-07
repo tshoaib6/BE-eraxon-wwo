@@ -88,8 +88,8 @@ export const signup = async (req: Request, res: Response): Promise<Response> => 
     if (!notification) {
       // Create a new notification as a fallback if none exists
       notification = new NotificationModel({
-        title: 'Welcome to WWO platform!',
-        description: 'You have successfully registered.',
+        title: 'You have successfully registered.!',
+        description: '',
         url: '/create-obituary',
         type: 'registration',
         status: 'unread',
@@ -166,8 +166,8 @@ export const verifyEmail = async (
     // Create a new notification for successful email verification
     const notification = new Notification({
       title: 'Welcome to WWO Platform!',
-      description: 'Your email has been successfully verified. Enjoy exploring the platform!',
-      url: '/welcome', // Adjust URL as needed for your frontend
+      description: '',
+      url: '/create-obituary', // Adjust URL as needed for your frontend
       type: 'email_verification',
       status: 'unread',
       createdAt: new Date(),
@@ -382,7 +382,7 @@ export const login = async (req: Request, res: Response) => {
     const notification = new Notification({
       // user: userId,
       title: 'Successfully Logged In',
-      description: 'You have successfullyyyyy logged in.',
+      description: 'Please complete Your Profile',
       url: '/create-obituary',
       status: 'unread',
       type: 'login',

@@ -17,10 +17,10 @@ export interface INotification extends Document {
 const notificationSchema: Schema<INotification> = new Schema({
     user: { type: Schema.Types.ObjectId, ref: 'User', required: false }, // Reference to full User document
     title: { type: String, required: true },
-    description: { type: String, required: true },
+    description: { type: String, required: false },
     url: { type: String, required: true }, // URL or frontend path for navigation
     status: { type: String, enum: ['read', 'unread'], default: 'unread' },
-    type: { type: String, enum: ['registration', 'login', 'system'], required: true },
+    type: { type: String, enum: ['registration', 'login', 'post_creation'], required: true },
     createdAt: { type: Date, default: Date.now }
 });
 
