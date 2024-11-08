@@ -234,7 +234,7 @@ export const createPost = async (
     const notification = new Notification({
       title: 'Your Post Has Published Successfully',
       description: "", // Shortened description
-      url: "/community", // Link to the new post
+      url: "", // Link to the new post
       type: 'post_creation',
       status: 'unread',
       createdAt: new Date(),

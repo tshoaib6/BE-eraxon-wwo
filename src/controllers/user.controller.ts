@@ -383,7 +383,7 @@ export const login = async (req: Request, res: Response) => {
       // user: userId,
       title: 'Successfully Logged In',
       description: 'Please complete Your Profile',
-      url: '/create-obituary',
+      url: '/profile/settings',
       status: 'unread',
       type: 'login',
       createdAt: new Date()

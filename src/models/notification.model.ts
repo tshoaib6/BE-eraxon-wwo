@@ -20,7 +20,7 @@ const notificationSchema: Schema<INotification> = new Schema({
     description: { type: String, required: false },
     url: { type: String, required: true }, // URL or frontend path for navigation
     status: { type: String, enum: ['read', 'unread'], default: 'unread' },
-    type: { type: String, enum: ['registration', 'login', 'post_creation'], required: true },
+    type: { type: String, enum: ['registration', 'login', 'post_creation','email_verification'], required: true },
     createdAt: { type: Date, default: Date.now }
 });
 

@@ -10,4 +10,7 @@ router.post('/notifications', createNotificationHandler);
 router.get('/getnotifications', getNotifications);
 router.put('/notifications/:id/read', markNotificationAsRead);
 
+
+router.put('/notifications/mark-all-as-read', markNotificationAsRead);
+
 export default router;

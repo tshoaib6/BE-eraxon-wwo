@@ -149,37 +149,92 @@ export const getNotifications = async (req: Request, res: Response): Promise<Res
 //       return res.status(500).json({ message: 'Internal Server Error' });
 //     }
 //   };
-export const markNotificationAsRead = async (req:any, res:any) => {
+
+
+// without mark all as read
+// export const markNotificationAsRead = async (req:any, res:any) => {
+//   const { id } = req.params;
+//   // const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+
+//   // console.log("Notification ID:", id);
+//   // console.log("Token:", token);
+
+//   // if (!token) {
+//   //   return res.status(401).json({ message: "Authorization token is required" });
+//   // }
+
+//   try {
+//     // Find and update notification only by ID
+//     const notification = await Notification.findOneAndUpdate(
+//       { _id: id },
+//       { status: 'read' },
+//       { new: true }
+//     );
+
+//     if (!notification) {
+//       console.log("Notification not found. ID:", id);
+//       return res.status(404).json({ message: 'Notification not found' });
+//     }
+
+//     return res.status(200).json({
+//       message: 'Notification marked as read',
+//       notification,
+//     });
+//   } catch (error) {
+//     console.error('Error in markNotificationAsRead:', error);
+//     return res.status(500).json({ message: 'Internal Server Error' });
+//   }
+// };
+
+
+export const markNotificationAsRead = async (req: any, res: any) => {
   const { id } = req.params;
-  const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+  
+  // const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
 
-  console.log("Notification ID:", id);
-  console.log("Token:", token);
+  // console.log("Notification ID:", id);
+  // console.log("Token:", token);
 
-  if (!token) {
-    return res.status(401).json({ message: "Authorization token is required" });
-  }
+  // if (!token) {
+  //   return res.status(401).json({ message: "Authorization token is required" });
+  // }
 
   try {
-    // Find and update notification only by ID
-    const notification = await Notification.findOneAndUpdate(
-      { _id: id },
-      { status: 'read' },
-      { new: true }
-    );
+    if (id) {
+      // Mark a specific notification as read
+      const notification = await Notification.findOneAndUpdate(
+        { _id: id },
+        { status: 'read' },
+        { new: true }
+      );
 
-    if (!notification) {
-      console.log("Notification not found. ID:", id);
-      return res.status(404).json({ message: 'Notification not found' });
+      if (!notification) {
+        console.log("Notification not found. ID:", id);
+        return res.status(404).json({ message: 'Notification not found' });
+      }
+
+      return res.status(200).json({
+        message: 'Notification marked as read',
+        notification,
+      });
+    } else {
+      // Mark all notifications as read
+      const result = await Notification.updateMany(
+        { status: 'unread' },  // Filter unread notifications
+        { status: 'read' }     // Set status to read
+      );
+
+      if (result.modifiedCount === 0) {
+        console.log("No unread notifications found");
+        return res.status(404).json({ message: 'No unread notifications found' });
+      }
+
+      return res.status(200).json({
+        message: 'All notifications marked as read',
+      });
     }
-
-    return res.status(200).json({
-      message: 'Notification marked as read',
-      notification,
-    });
   } catch (error) {
     console.error('Error in markNotificationAsRead:', error);
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
-
