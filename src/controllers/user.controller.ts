@@ -71,6 +71,64 @@ import NotificationModel from '../models/notification.model'; // Adjust the path
 // };
 
 
+// export const signup = async (req: Request, res: Response): Promise<Response> => {
+//   const { firstName, lastName, email, password, confirmPassword } = req.body;
+
+//   if (password !== confirmPassword) {
+//     return res.status(400).json({ message: 'Passwords do not match' });
+//   }
+
+//   try {
+//     // Sign up the user
+//     const user = await signUpUser(firstName, lastName, email, password);
+
+//     // Create a new signup notification in case one doesn't already exist
+//     let notification = await NotificationModel.findOne({ type: 'registration' }).sort({ createdAt: -1 });
+
+//     if (!notification) {
+//       // Create a new notification as a fallback if none exists
+//       notification = new NotificationModel({
+//         title: 'You have successfully registered.!',
+//         description: '',
+//         url: '/create-obituary',
+//         type: 'registration',
+//         status: 'unread',
+//         createdAt: new Date(),
+//       });
+//       await notification.save();
+//     }
+
+//     // Emit the notification via Socket.IO
+//     const socket = getSocket();
+//     if (socket) {
+//       socket.emit('notification', {
+//         title: notification.title,
+//         description: notification.description,
+//         url: notification.url,
+//         type: notification.type,
+//         status: notification.status,
+//         createdAt: notification.createdAt,
+//       });
+//     } else {
+//       console.warn('Socket.IO instance is not available');
+//     }
+
+//     return res.status(201).json({ message: 'User registered. Verification email sent.' });
+//   } catch (error) {
+//     console.error('Signup error:', error);
+
+//     // Handle error correctly by sending a response with a valid status code
+//     if (error instanceof Error) {
+//       return res.status(500).json({ message: error.message });
+//     }
+
+//     // Fallback error handler
+//     return res.status(500).json({ message: 'An unexpected error occurred' });
+//   }
+// };
+
+
+// new code with user ID 
 export const signup = async (req: Request, res: Response): Promise<Response> => {
   const { firstName, lastName, email, password, confirmPassword } = req.body;
 
@@ -79,39 +137,63 @@ export const signup = async (req: Request, res: Response): Promise<Response> => 
   }
 
   try {
-    // Sign up the user
+    // Sign up the user and retrieve the user object with userId
     const user = await signUpUser(firstName, lastName, email, password);
+    const userId = user.id;  // Assuming `signUpUser` returns a user object with `id`
+console.log("userId from backend",userId)
+    // Create the welcome notification
+    const welcomeNotification = new Notification({
+      user: userId,  // Associate the notification with the registered user
+      title: 'Welcome to WWO Platform!',
+      description: 'We are excited to have you here.',
+      url: '/welcome',
+      status: 'unread',
+      type: 'welcome',
+      createdAt: new Date(),
+    });
 
-    // Create a new signup notification in case one doesn't already exist
-    let notification = await NotificationModel.findOne({ type: 'registration' }).sort({ createdAt: -1 });
+    // Create the profile completion notification
+    const profileNotification = new Notification({
+      user: userId,  // Associate the notification with the registered user
+      title: 'Please complete your profile',
+      description: 'Complete your profile to get started.',
+      url: '/profile/settings',
+      status: 'unread',
+      type: 'profile-completion',
+      createdAt: new Date(),
+    });
 
-    if (!notification) {
-      // Create a new notification as a fallback if none exists
-      notification = new NotificationModel({
-        title: 'You have successfully registered.!',
-        description: '',
-        url: '/create-obituary',
-        type: 'registration',
-        status: 'unread',
-        createdAt: new Date(),
-      });
-      await notification.save();
-    }
+    // Save both notifications to the database
+    await welcomeNotification.save();
+    await profileNotification.save();
 
-    // Emit the notification via Socket.IO
-    const socket = getSocket();
-    if (socket) {
-      socket.emit('notification', {
-        title: notification.title,
-        description: notification.description,
-        url: notification.url,
-        type: notification.type,
-        status: notification.status,
-        createdAt: notification.createdAt,
-      });
-    } else {
-      console.warn('Socket.IO instance is not available');
-    }
+    // Emit both notifications via Socket.IO
+   // Emit to a specific room named after the userId
+const socket = getSocket();
+if (socket) {
+  socket.to(userId).emit('notification', {
+    user: userId,
+    title: welcomeNotification.title,
+    description: welcomeNotification.description,
+    url: welcomeNotification.url,
+    type: welcomeNotification.type,
+    status: welcomeNotification.status,
+    createdAt: welcomeNotification.createdAt,
+  });
+
+  socket.to(userId).emit('notification', {
+    user: userId,
+    title: profileNotification.title,
+    description: profileNotification.description,
+    url: profileNotification.url,
+    type: profileNotification.type,
+    status: profileNotification.status,
+    createdAt: profileNotification.createdAt,
+  });
+} else {
+  console.warn('Socket.IO instance is not available');
+}
+
 
     return res.status(201).json({ message: 'User registered. Verification email sent.' });
   } catch (error) {
@@ -130,80 +212,81 @@ export const signup = async (req: Request, res: Response): Promise<Response> => 
 
 
 
-// export const verifyEmail = async (
-//   req: Request,
-//   res: Response
-// ): Promise<Response> => {
-//   const { token } = req.query
-
-//   if (!token) {
-//     return res.status(400).json({ message: 'Invalid or missing token' })
-//   }
-
-//   try {
-//     await verifyUserEmail(token as string)
-//     return res.status(200).json({ message: 'Email verified successfully' })
-//   } catch (error) {
-//     handleError(error, res)
-//     return res.json()
-//   }
-// }
 
 export const verifyEmail = async (
   req: Request,
   res: Response
 ): Promise<Response> => {
-  const { token } = req.query;
+  const { token } = req.query
 
   if (!token) {
-    return res.status(400).json({ message: 'Invalid or missing token' });
+    return res.status(400).json({ message: 'Invalid or missing token' })
   }
 
   try {
-    // Verify the user's email using the provided token
-    await verifyUserEmail(token as string);
-
-    // Create a new notification for successful email verification
-    const notification = new Notification({
-      title: 'Welcome to WWO Platform!',
-      description: '',
-      url: '/create-obituary', // Adjust URL as needed for your frontend
-      type: 'email_verification',
-      status: 'unread',
-      createdAt: new Date(),
-    });
-
-    // Save the notification to the database
-    await notification.save();
-
-    // Emit the notification via Socket.IO
-    const socket = getSocket();
-    if (socket) {
-      socket.emit('notification', {
-        title: notification.title,
-        description: notification.description,
-        url: notification.url,
-        type: notification.type,
-        status: notification.status,
-        createdAt: notification.createdAt,
-      });
-    } else {
-      console.warn('Socket.IO instance is not available');
-    }
-
-    return res.status(200).json({ message: 'Email verified successfully' });
+    await verifyUserEmail(token as string)
+    return res.status(200).json({ message: 'Email verified successfully' })
   } catch (error) {
-    console.error('Email verification error:', error);
-
-    // Handle error correctly by sending a response with a valid status code
-    if (error instanceof Error) {
-      return res.status(500).json({ message: error.message });
-    }
-
-    // Fallback error handler
-    return res.status(500).json({ message: 'An unexpected error occurred' });
+    handleError(error, res)
+    return res.json()
   }
-};
+}
+
+// export const verifyEmail = async (
+//   req: Request,
+//   res: Response
+// ): Promise<Response> => {
+//   const { token } = req.query;
+
+//   if (!token) {
+//     return res.status(400).json({ message: 'Invalid or missing token' });
+//   }
+
+//   try {
+//     // Verify the user's email using the provided token
+//     await verifyUserEmail(token as string);
+
+//     // Create a new notification for successful email verification
+//     const notification = new Notification({
+//       title: 'Welcome to WWO Platform!',
+//       description: '',
+//       url: '', // Adjust URL as needed for your frontend
+//       type: 'email_verification',
+//       status: 'unread',
+//       createdAt: new Date(),
+//     });
+
+//     // Save the notification to the database
+//     await notification.save();
+
+//     // Emit the notification via Socket.IO
+//     const socket = getSocket();
+//     if (socket) {
+//       socket.emit('notification', {
+//         title: notification.title,
+//         description: notification.description,
+//         url: notification.url,
+//         type: notification.type,
+//         status: notification.status,
+//         createdAt: notification.createdAt,
+//       });
+//     } else {
+//       console.warn('Socket.IO instance is not available');
+//     }
+
+//     return res.status(200).json({ message: 'Email verified successfully' });
+//   } catch (error) {
+//     console.error('Email verification error:', error);
+
+//     // Handle error correctly by sending a response with a valid status code
+//     if (error instanceof Error) {
+//       return res.status(500).json({ message: error.message });
+//     }
+
+//     // Fallback error handler
+//     return res.status(500).json({ message: 'An unexpected error occurred' });
+//   }
+// };
 
 
 // export const login = async (req: Request, res: Response) => {
@@ -354,6 +437,7 @@ const jwt = require('jsonwebtoken');
 //   }
 // };
 
+// Notification with user Id 
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -371,48 +455,51 @@ export const login = async (req: Request, res: Response) => {
 
     // Set the JWT token as a cookie (optional)
     res.cookie('token', response.token, {
-      httpOnly: true, // Prevents client-side access to the cookie
-      secure: process.env.NODE_ENV === 'production', // Only send cookie over HTTPS in production
-      sameSite: 'strict', // Mitigates CSRF attacks
-      maxAge: 15 * 60 * 1000 // Cookie expiration time
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000,
     });
 
+    // Decode the token to get the userId
+    const decodedToken = jwt.verify(response.token, process.env.JWT_SECRET as string);
+    const userId = decodedToken.userId; // Adjust based on your token structure
+console.log("the user id is",userId)
+    // Create a new login notification with userId
+    // const notification = new Notification({
+    //   user: userId, // Associate the notification with the logged-in user
+    //   title: 'Successfully Logged In',
+    //   description: 'Please complete Your Profile',
+    //   url: '/profile/settings',
+    //   status: 'unread',
+    //   type: 'login',
+    //   createdAt: new Date(),
+    // });
 
-    // Create a new login notification
-    const notification = new Notification({
-      // user: userId,
-      title: 'Successfully Logged In',
-      description: 'Please complete Your Profile',
-      url: '/profile/settings',
-      status: 'unread',
-      type: 'login',
-      createdAt: new Date()
-    });
+    // // Save the notification to the database
+    // await notification.save();
 
-    // Save the notification to the database
-    await notification.save();
-
-    // Emit the notification via Socket.IO
-    const socket = getSocket();
-    if (socket) {
-      socket.emit('notification', {
-        // user: userId,
-        title: notification.title,
-        description: notification.description,
-        url: notification.url,
-        type: notification.type,
-        status: notification.status,
-        createdAt: notification.createdAt,
-      });
-    } else {
-      console.warn('Socket.IO instance is not available');
-    }
+    // // Emit the notification via Socket.IO, including userId
+    // const socket = getSocket();
+    // if (socket) {
+    //   socket.emit('notification', {
+    //     user: userId, // Include the userId in the emitted data
+    //     title: notification.title,
+    //     description: notification.description,
+    //     url: notification.url,
+    //     type: notification.type,
+    //     status: notification.status,
+    //     createdAt: notification.createdAt,
+    //   });
+    // } else {
+    //   console.warn('Socket.IO instance is not available');
+    // }
 
     // Return the token and user information in the response
     return res.status(200).json({
       message: 'Login successful',
-      user: response.user,  // Make sure this is accessible
-      token: response.token,  // Make sure this is accessible
+      user: response.user,
+      token: response.token,
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -426,6 +513,7 @@ export const login = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'An unexpected error occurred' });
   }
 };
+
 
 
 
