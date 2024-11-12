@@ -57,26 +57,21 @@ export const forgotPasswordService = {
     return true;
   },
 
-  setNewPassword: async (email: string, newPassword: string, confirmPassword: string): Promise<void> => {
-    if (newPassword !== confirmPassword) {
-      throw new Error('Passwords do not match.');
-    }
-
+  // In forgotPasswordService
+  setNewPassword: async (email: string, newPassword: string) => {
     const user = await User.findOne({ email });
-
-    if (!user) {
-      throw new Error('User not found.');
-    }
-
-    // Hash the new password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-    // Update the user's password and clear OTP fields
-    user.password = hashedPassword;
+ 
+    if (!user) throw new Error('User not found.');
+ 
+    // Set the new password directly without hashing
+    user.password = newPassword;
+ 
+    // Clear OTP fields
     user.resetOTP = undefined;
     user.otpExpires = undefined;
+ 
+    await user.save(); // The pre-save middleware will hash the password
+ }
+ 
 
-    await user.save();
-  }
 };

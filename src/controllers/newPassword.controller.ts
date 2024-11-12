@@ -7,7 +7,7 @@ export const setNewPassword = async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'Passwords do not match.' });
   }
   try {
-    await forgotPasswordService.setNewPassword(email, newPassword, confirmPassword);
+    await forgotPasswordService.setNewPassword(email, newPassword, );
     res.status(200).json({ message: 'Password updated successfully.' });
   } catch (error: any) {
     res.status(400).json({ message: error.message });
