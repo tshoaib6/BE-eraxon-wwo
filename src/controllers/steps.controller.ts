@@ -277,3 +277,128 @@ export const getRecordById = async (
     return res.status(500).json({ message: errorMessage })
   }
 }
+
+
+
+
+// export const searchAndSortRecords = async (req: Request, res: Response): Promise<Response> => {
+//   try {
+//     const { nameOfDeceased,  country, city, dateOfBirth, dateOfDeath, sortBy, sortOrder } = req.query;
+
+//     // Step 2: Build the search criteria based on the provided query parameters
+//     const searchCriteria: any = {};
+
+//     if (nameOfDeceased) {
+//       searchCriteria['basicInfo.nameOfDeceased'] = { $regex: nameOfDeceased, $options: 'i' };
+//     }
+   
+//     if (country) {
+//       searchCriteria['memorialServices.country'] = { $regex: country, $options: 'i' };
+//     }
+//     if (city) {
+//       searchCriteria['memorialServices.city'] = { $regex: city, $options: 'i' };
+//     }
+//     if (dateOfBirth) {
+//       searchCriteria['basicInfo.dateOfBirth'] = dateOfBirth;
+//     }
+//     if (dateOfDeath) {
+//       searchCriteria['basicInfo.dateOfDeath'] = dateOfDeath;
+//     }
+
+//     // Step 3: Define sorting criteria based on the `sortBy` and `sortOrder` parameters
+//     const sortOptions: any = {};
+//     if (sortBy) {
+//       const sortFieldMap: Record<string, string> = {
+//         nameOfDeceased: 'basicInfo.nameOfDeceased',
+//         // lastName: 'family.survivingFamily.lastName',
+//         country: 'memorialServices.country',
+//         city: 'memorialServices.city',
+//         dateOfBirth: 'basicInfo.dateOfBirth',
+//         dateOfDeath: 'basicInfo.dateOfDeath'
+//       };
+
+//       // Map sortBy field to the actual database field
+//       const sortField = sortFieldMap[sortBy as string];
+//       if (sortField) {
+//         sortOptions[sortField] = sortOrder === 'desc' ? -1 : 1; // Sort order (1 for ascending, -1 for descending)
+//       }
+//     }
+
+//     // Step 4: Query the database with search and sort criteria
+//     const records = await CombinedForm.find(searchCriteria).sort(sortOptions);
+
+//     return res.status(200).json({
+//       message: 'Records retrieved successfully',
+//       records
+//     });
+//   } catch (error) {
+//     console.error('Error in searchAndSortRecords:', error);
+//     const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+//     return res.status(500).json({ message: errorMessage });
+//   }
+// };
+
+
+
+
+
+export const searchAndSortRecords = async (req: Request, res: Response): Promise<Response> => {
+  try {
+    const { nameOfDeceased, country, city, dateOfBirth, dateOfDeath, sortBy, sortOrder } = req.query;
+
+    const searchCriteria: any = {};
+
+    if (nameOfDeceased) {
+      searchCriteria['basicInfo.nameOfDeceased'] = { $regex: nameOfDeceased, $options: 'i' };
+    }
+    if (country) {
+      searchCriteria['memorialServices.country'] = { $regex: country, $options: 'i' };
+    }
+    if (city) {
+      searchCriteria['memorialServices.city'] = { $regex: city, $options: 'i' };
+    }
+
+    if (dateOfBirth) {
+      // Parse the date from the frontend and format it into 'YYYY-MM-DD'
+      const dobString = new Date(dateOfBirth as string).toISOString().split('T')[0];
+      searchCriteria['basicInfo.dateOfBirth'] = dobString; // Store formatted date
+    }
+    
+    if (dateOfDeath) {
+      // Parse the date from the frontend and format it into 'YYYY-MM-DD'
+      const dodString = new Date(dateOfDeath as string).toISOString().split('T')[0];
+      searchCriteria['basicInfo.dateOfDeath'] = dodString; // Store formatted date
+    }
+    
+    
+
+    const sortOptions: any = {};
+    if (sortBy) {
+      const sortFieldMap: Record<string, string> = {
+        nameOfDeceased: 'basicInfo.nameOfDeceased',
+        country: 'memorialServices.country',
+        city: 'memorialServices.city',
+        dateOfBirth: 'basicInfo.dateOfBirth',
+        dateOfDeath: 'basicInfo.dateOfDeath'
+      };
+
+      const sortField = sortFieldMap[sortBy as string];
+      if (sortField) {
+        sortOptions[sortField] = sortOrder === 'desc' ? -1 : 1;
+      }
+    }
+
+    console.log('Search Criteria:', searchCriteria);
+
+    const records = await CombinedForm.find(searchCriteria).sort(sortOptions);
+
+    return res.status(200).json({
+      message: 'Records retrieved successfully',
+      records
+    });
+  } catch (error) {
+    console.error('Error in searchAndSortRecords:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+    return res.status(500).json({ message: errorMessage });
+  }
+};
