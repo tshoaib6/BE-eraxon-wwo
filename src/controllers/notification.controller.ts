@@ -53,138 +53,40 @@ export const createNotificationHandler = async (req: Request, res: Response): Pr
 // get api 
 
 // notification.controller.ts
-
 export const getNotifications = async (req: Request, res: Response): Promise<Response> => {
-    try {
-      // Retrieve token from headers (sent from frontend)
-      const token = req.headers['authorization']?.split(' ')[1]; // Token in the form "Bearer <token>"
-  
-      let notifications;
-      
-      if (token) {
-        // Token exists, decode token to extract user ID
-        const userId = extractUserIdFromToken(
-          JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
-        );
-  
-        if (!userId) {
-          return res.status(401).json({ message: 'Invalid or expired token' });
-        }
-  
-        // Fetch notifications for the user from the database
-        notifications = await Notification.find({ user: userId }).sort({ createdAt: -1 }); // Sorted by creation date
-      } else {
-        // No token, get all notifications
-        notifications = await Notification.find().sort({ createdAt: -1 });
-      }
-  
-      if (!notifications.length) {
-        return res.status(404).json({ message: 'No notifications found' });
-      }
-  
-      return res.status(200).json({
-        message: 'Notifications fetched successfully',
-        notifications,
-      });
-    } catch (error) {
-      console.error('Error in getNotifications:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
-      return res.status(500).json({ message: errorMessage });
+  try {
+    // Retrieve token from headers (sent from frontend)
+    const token = req.headers['authorization']?.split(' ')[1]; // Token in the form "Bearer <token>"
+
+    if (!token) {
+      return res.status(401).json({ message: 'Unauthorized: No token provided' });
     }
-  };
-  
 
+    // Verify and decode the token to extract user ID
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
+    const userId = decoded.userId;
 
-  // controllers/notification.controller.ts
+    if (!userId) {
+      return res.status(401).json({ message: 'Invalid or expired token' });
+    }
 
-// Handler to mark a notification as read
-// export const markNotificationAsRead = async (req: Request, res: Response): Promise<Response> => {
-//     const { id } = req.params;  // Extract notification ID from URL parameters
-//     const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
-  
-//     if (!token) {
-//       return res.status(401).json({ message: "Authorization token is required" });
-//     }
-  
-//     try {
-//       // Decode the token and extract user ID (if available)
-//       let userId;
-//       try {
-//         userId = extractUserIdFromToken(
-//           JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
-//         );
-//       } catch (error) {
-//         console.log("Error extracting userId from token:", error);
-//       }
-  
-//       // Find the notification by ID
-//       let notification;
-//       if (userId) {
-//         // If userId is available, check if the notification belongs to the user
-//         notification = await Notification.findOneAndUpdate(
-//           { _id: id, user: userId },  // Ensure it's the correct user's notification
-//           { status: 'read' },
-//           { new: true }  // Return the updated notification
-//         );
-//       } else {
-//         // If userId is not available, allow marking the notification as read regardless of the user
-//         notification = await Notification.findOneAndUpdate(
-//           { _id: id },  // Only match by notification ID, without user filter
-//           { status: 'read' },
-//           { new: true }  // Return the updated notification
-//         );
-//       }
-  
-//       if (!notification) {
-//         return res.status(404).json({ message: 'Notification not found' });
-//       }
-  
-//       // Return the updated notification
-//       return res.status(200).json({
-//         message: 'Notification marked as read',
-//         notification,
-//       });
-//     } catch (error) {
-//       console.error('Error in markNotificationAsRead:', error);
-//       return res.status(500).json({ message: 'Internal Server Error' });
-//     }
-//   };
+    // Fetch notifications for the user from the database
+    const notifications = await Notification.find({ user: userId }).sort({ createdAt: -1 }); // Sorted by creation date
 
+    if (!notifications.length) {
+      return res.status(404).json({ message: 'No notifications found' });
+    }
 
-// without mark all as read
-// export const markNotificationAsRead = async (req:any, res:any) => {
-//   const { id } = req.params;
-//   // const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
-
-//   // console.log("Notification ID:", id);
-//   // console.log("Token:", token);
-
-//   // if (!token) {
-//   //   return res.status(401).json({ message: "Authorization token is required" });
-//   // }
-
-//   try {
-//     // Find and update notification only by ID
-//     const notification = await Notification.findOneAndUpdate(
-//       { _id: id },
-//       { status: 'read' },
-//       { new: true }
-//     );
-
-//     if (!notification) {
-//       console.log("Notification not found. ID:", id);
-//       return res.status(404).json({ message: 'Notification not found' });
-//     }
-
-//     return res.status(200).json({
-//       message: 'Notification marked as read',
-//       notification,
-//     });
-//   } catch (error) {
-//     console.error('Error in markNotificationAsRead:', error);
-//     return res.status(500).json({ message: 'Internal Server Error' });
-//   }
-// };
+    return res.status(200).json({
+      message: 'Notifications fetched successfully',
+      notifications,
+    });
+  } catch (error) {
+    console.error('Error in getNotifications:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+    return res.status(500).json({ message: errorMessage });
+  }
+};
 
 
 export const markNotificationAsRead = async (req: any, res: any) => {
