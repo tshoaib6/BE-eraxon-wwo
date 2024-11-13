@@ -51,35 +51,37 @@ export const createNotificationHandler = async (req: Request, res: Response): Pr
 
 
 // get api 
-
 // notification.controller.ts
+
+
+interface DecodedToken {
+  userId: string;
+}
+
+// Get notifications with unread count for the user
 export const getNotifications = async (req: Request, res: Response): Promise<Response> => {
   try {
-    // Retrieve token from headers (sent from frontend)
-    const token = req.headers['authorization']?.split(' ')[1]; // Token in the form "Bearer <token>"
-
+    const token = req.headers['authorization']?.split(' ')[1];
     if (!token) {
       return res.status(401).json({ message: 'Unauthorized: No token provided' });
     }
 
-    // Verify and decode the token to extract user ID
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as unknown as DecodedToken;
     const userId = decoded.userId;
 
     if (!userId) {
       return res.status(401).json({ message: 'Invalid or expired token' });
     }
 
-    // Fetch notifications for the user from the database
-    const notifications = await Notification.find({ user: userId }).sort({ createdAt: -1 }); // Sorted by creation date
-
-    if (!notifications.length) {
-      return res.status(404).json({ message: 'No notifications found' });
-    }
+    // Fetch notifications for the user, sorted by creation date
+    const notifications = await Notification.find({ user: userId }).sort({ createdAt: -1 });
+    const unreadCount = await Notification.countDocuments({ user: userId, isRead: false });
 
     return res.status(200).json({
       message: 'Notifications fetched successfully',
       notifications,
+      unreadCount,
     });
   } catch (error) {
     console.error('Error in getNotifications:', error);
@@ -88,30 +90,19 @@ export const getNotifications = async (req: Request, res: Response): Promise<Res
   }
 };
 
-
-export const markNotificationAsRead = async (req: any, res: any) => {
+// Mark a notification as read or mark all as read
+export const markNotificationAsRead = async (req: Request, res: Response): Promise<Response> => {
   const { id } = req.params;
-  
-  // const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
-
-  // console.log("Notification ID:", id);
-  // console.log("Token:", token);
-
-  // if (!token) {
-  //   return res.status(401).json({ message: "Authorization token is required" });
-  // }
 
   try {
     if (id) {
-      // Mark a specific notification as read
       const notification = await Notification.findOneAndUpdate(
         { _id: id },
-        { status: 'read' },
+        { isRead: true },
         { new: true }
       );
 
       if (!notification) {
-        console.log("Notification not found. ID:", id);
         return res.status(404).json({ message: 'Notification not found' });
       }
 
@@ -120,14 +111,20 @@ export const markNotificationAsRead = async (req: any, res: any) => {
         notification,
       });
     } else {
-      // Mark all notifications as read
+      const token = req.headers['authorization']?.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ message: 'Unauthorized: No token provided' });
+      }
+
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as unknown as DecodedToken;
+      const userId = decoded.userId;
+
       const result = await Notification.updateMany(
-        { status: 'unread' },  // Filter unread notifications
-        { status: 'read' }     // Set status to read
+        { user: userId, isRead: false },
+        { isRead: true }
       );
 
       if (result.modifiedCount === 0) {
-        console.log("No unread notifications found");
         return res.status(404).json({ message: 'No unread notifications found' });
       }
 
