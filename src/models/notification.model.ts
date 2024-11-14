@@ -11,6 +11,7 @@ export interface INotification extends Document {
     status: 'read' | 'unread';
     type: 'registration' | 'application' | 'system';
     createdAt: Date;
+    isRead:Boolean;
 }
 
 // Define the Notification schema
@@ -21,7 +22,9 @@ const notificationSchema: Schema<INotification> = new Schema({
     url: { type: String, required: true }, // URL or frontend path for navigation
     status: { type: String, enum: ['read', 'unread'], default: 'unread' },
     type: { type: String, enum: ['registration', 'login', 'post_creation','email_verification',"profile-completion","welcome"], required: true },
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+    isRead: { type: Boolean, default: false } // New field
+
 });
 
 // Create and export the Notification model
