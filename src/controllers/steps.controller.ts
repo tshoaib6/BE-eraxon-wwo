@@ -342,9 +342,80 @@ export const getRecordById = async (
 
 
 
+// export const searchAndSortRecords = async (req: Request, res: Response): Promise<Response> => {
+//   try {
+//     const { nameOfDeceased, country, city, dateOfBirth, dateOfDeath, sortBy, sortOrder } = req.query;
+
+//     const searchCriteria: any = {};
+
+//     if (nameOfDeceased) {
+//       searchCriteria['basicInfo.nameOfDeceased'] = { $regex: nameOfDeceased, $options: 'i' };
+//     }
+//     if (country) {
+//       searchCriteria['memorialServices.country'] = { $regex: country, $options: 'i' };
+//     }
+//     if (city) {
+//       searchCriteria['memorialServices.city'] = { $regex: city, $options: 'i' };
+//     }
+
+//     if (dateOfBirth) {
+//       // Parse the date from the frontend and format it into 'YYYY-MM-DD'
+//       const dobString = new Date(dateOfBirth as string).toISOString().split('T')[0];
+//       searchCriteria['basicInfo.dateOfBirth'] = dobString; // Store formatted date
+//     }
+    
+//     if (dateOfDeath) {
+//       // Parse the date from the frontend and format it into 'YYYY-MM-DD'
+//       const dodString = new Date(dateOfDeath as string).toISOString().split('T')[0];
+//       searchCriteria['basicInfo.dateOfDeath'] = dodString; // Store formatted date
+//     }
+    
+    
+
+//     const sortOptions: any = {};
+//     if (sortBy) {
+//       const sortFieldMap: Record<string, string> = {
+//         nameOfDeceased: 'basicInfo.nameOfDeceased',
+//         country: 'memorialServices.country',
+//         city: 'memorialServices.city',
+//         dateOfBirth: 'basicInfo.dateOfBirth',
+//         dateOfDeath: 'basicInfo.dateOfDeath'
+//       };
+
+//       const sortField = sortFieldMap[sortBy as string];
+//       if (sortField) {
+//         sortOptions[sortField] = sortOrder === 'desc' ? -1 : 1;
+//       }
+//     }
+
+//     console.log('Search Criteria:', searchCriteria);
+
+//     const records = await CombinedForm.find(searchCriteria).sort(sortOptions);
+
+//     return res.status(200).json({
+//       message: 'Records retrieved successfully',
+//       records
+//     });
+//   } catch (error) {
+//     console.error('Error in searchAndSortRecords:', error);
+//     const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+//     return res.status(500).json({ message: errorMessage });
+//   }
+// };
+
 export const searchAndSortRecords = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { nameOfDeceased, country, city, dateOfBirth, dateOfDeath, sortBy, sortOrder } = req.query;
+    const {
+      nameOfDeceased,
+      country,
+      city,
+      dateOfBirth,
+      dateOfDeath,
+      sortBy,
+      sortOrder,
+      page = 1, // Default to page 1 if not provided
+      limit = 10 // Default to 10 records per page if not provided
+    } = req.query;
 
     const searchCriteria: any = {};
 
@@ -359,18 +430,13 @@ export const searchAndSortRecords = async (req: Request, res: Response): Promise
     }
 
     if (dateOfBirth) {
-      // Parse the date from the frontend and format it into 'YYYY-MM-DD'
       const dobString = new Date(dateOfBirth as string).toISOString().split('T')[0];
-      searchCriteria['basicInfo.dateOfBirth'] = dobString; // Store formatted date
+      searchCriteria['basicInfo.dateOfBirth'] = dobString;
     }
-    
     if (dateOfDeath) {
-      // Parse the date from the frontend and format it into 'YYYY-MM-DD'
       const dodString = new Date(dateOfDeath as string).toISOString().split('T')[0];
-      searchCriteria['basicInfo.dateOfDeath'] = dodString; // Store formatted date
+      searchCriteria['basicInfo.dateOfDeath'] = dodString;
     }
-    
-    
 
     const sortOptions: any = {};
     if (sortBy) {
@@ -388,13 +454,29 @@ export const searchAndSortRecords = async (req: Request, res: Response): Promise
       }
     }
 
-    console.log('Search Criteria:', searchCriteria);
+    // Ensure `limit` is a valid number (use 10 as fallback if not)
+    const pageNumber = parseInt(page as string, 10);
+    const pageSize = isNaN(Number(limit)) ? 10 : Number(limit); // Default to 10 if invalid limit
 
-    const records = await CombinedForm.find(searchCriteria).sort(sortOptions);
+    const skip = (pageNumber - 1) * pageSize;
+
+    // Fetch records with pagination
+    const records = await CombinedForm.find(searchCriteria)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(pageSize);
+
+    // Total records count for pagination
+    const totalRecords = await CombinedForm.countDocuments(searchCriteria);
 
     return res.status(200).json({
       message: 'Records retrieved successfully',
-      records
+      records,
+      pagination: {
+        currentPage: pageNumber,
+        totalPages: Math.ceil(totalRecords / pageSize),
+        totalRecords
+      }
     });
   } catch (error) {
     console.error('Error in searchAndSortRecords:', error);
