@@ -14,6 +14,7 @@ export const setNewPassword = async (req: Request, res: Response) => {
 
   // Verify the token before allowing password reset
   try {
+    const token = req.headers["authorization"]?.split(" ")[1];
     if (!token) {
       return res.status(401).json({ message: 'Token is required.' });
     }
