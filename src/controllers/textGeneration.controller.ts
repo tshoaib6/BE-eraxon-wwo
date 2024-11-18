@@ -5,7 +5,7 @@ import OpenAI from 'openai';
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY, // Your OpenAI API key
 });
-
+console.log("api key from env",openai)
 // Controller to handle text generation request
 export const generateText = async (req: Request, res: Response) => {
   const { prompt } = req.body; // Extract prompt from request body

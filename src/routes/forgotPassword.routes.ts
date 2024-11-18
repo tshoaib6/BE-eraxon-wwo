@@ -1,5 +1,5 @@
 import express from 'express';
-import { requestPasswordReset,verifyOTP } from '../controllers/forgotPassword.controller';
+import { requestPasswordReset,verifyOTP,resendOTP } from '../controllers/forgotPassword.controller';
 import { setNewPassword } from '../controllers/newPassword.controller';
 
 const router = express.Router();
@@ -10,5 +10,6 @@ router.post('/verify-otp', verifyOTP);
 
 router.post('/new-password', setNewPassword);
 
+router.get('/resend-otp', resendOTP); // New route for resending OTP
 
 export default router;

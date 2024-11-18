@@ -123,7 +123,27 @@ export const forgotPasswordService = {
     console.log("OTP verified successfully");
     return true;
   },
+  resendOTP: async (email: string) => {
+    const user = await User.findOne({ email });
 
+    if (!user) {
+      throw new Error('Email not found.');
+    }
+
+    // Generate a new OTP
+    const otp = crypto.randomInt(100000, 999999).toString();
+
+    // Update OTP and expiration time
+    user.resetOTP = otp;
+    user.otpExpires = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes from now
+
+    await user.save();
+
+    // Send the new OTP to the user's email
+    await sendEmail(user.email, 'Resend OTP', '../views/resetPassword.templete.html', { otp });
+
+    console.log(`New OTP sent to ${email}`);
+  },
   setNewPassword: async (email: string, newPassword: string) => {
     const user = await User.findOne({ email });
 
