@@ -138,11 +138,19 @@ export const forgotPasswordService = {
 
     const updatedUser = await user.save(); // This will save the document and trigger the pre-save hook to hash the password.
 
-     if (!updatedUser) {
+    if (!updatedUser) {
       console.log("Failed to update password.");
       throw new Error('Password update failed.');
     }
 
-    console.log("Password updatedd successfully.");
+    console.log("Password updated successfully.");
+
+    // Send notification email after password update
+    await sendEmail(
+      user.email, 
+      'Your Password Has Been Updated', 
+      '../views/passwordUpdated.templete.html', 
+      {}  // No OTP needed for password updated email
+    );
   },
 };

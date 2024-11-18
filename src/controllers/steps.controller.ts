@@ -218,7 +218,7 @@ export const getStep = async (
     const skip = (page - 1) * limit
 
     // Fetch all step data with pagination
-    const allSteps = await Step.find().select('basicInfo status')
+    const allSteps = await Step.find().select('basicInfo status personalDetails')
 
     if (!allSteps || allSteps.length === 0) {
       return res.status(404).json({ message: 'No step data found' })

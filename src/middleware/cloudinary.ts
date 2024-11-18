@@ -78,5 +78,21 @@ const uploadProfilePic = multer({
   },
 });
 
+
+const guestBookImageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'guestbook_images', // Separate folder for guestbook images
+    allowedFormats: ['jpg', 'png', 'jpeg'], // Only allow image formats
+    resource_type: 'image', // Explicitly set to handle images
+  },
+});
+
+const uploadGuestBookImage = multer({
+  storage: guestBookImageStorage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5 MB limit for guestbook image uploads
+  },
+});
 // Export existing upload function and new profile picture upload function
-export { cloudinary, upload, uploadProfilePic };
+export { cloudinary, upload, uploadProfilePic,uploadGuestBookImage  };

@@ -34,19 +34,21 @@ import { forgotPasswordService } from '../services/forgotPassword.service';
 
 
 import jwt from 'jsonwebtoken';
+import User from '../models/user.model';  // Adjust the import path based on your project structure
+import mongoose from 'mongoose';
 
 // Secret for JWT (use a secure secret in production)
 // const JWT_SECRET = process.env.JWT_SECRET;
 
 // Function to generate JWT token
-const generateToken = (email: string) => {
+const generateToken = (email: string,userId: string) => {
   // Check if JWT_SECRET exists in the environment variables
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT_SECRET is not defined in environment variables");
   }
 
   // Use JWT_SECRET from the environment
-  return jwt.sign({ email }, process.env.JWT_SECRET as string, { expiresIn: '15m' });
+  return jwt.sign({ email,userId  }, process.env.JWT_SECRET as string, { expiresIn: '15m' });
 };
 
 export const requestPasswordReset = async (req: Request, res: Response) => {
@@ -71,7 +73,15 @@ export const verifyOTP = async (req: Request, res: Response) => {
     const isValid = await forgotPasswordService.verifyOTP(email, otp);
     if (isValid) {
       // Generate JWT token to track OTP verification success
-      const token = generateToken(email);
+      const user = await User.findOne({ email });
+
+      // Check if user is not found
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+      const userId = (user._id as mongoose.Types.ObjectId).toString();
+
+      const token = generateToken(email,userId);
 
       // Return token to the client
       res.status(200).json({

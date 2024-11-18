@@ -284,7 +284,8 @@ export const getPosts = async (
   try {
     const posts = await Post.find()
       .populate("userId", "firstName lastName email")
-      .select("content mediaUrl createdAt");
+      .select("content mediaUrl createdAt")
+      .sort({ createdAt: -1 }); // Sorting posts in descending order by createdAt
 
     return res.status(200).json(posts);
   } catch (error) {
