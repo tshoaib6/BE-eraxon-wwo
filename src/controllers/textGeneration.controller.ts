@@ -27,7 +27,9 @@ You are an assistant tasked with enhancing obituary-related content. Your goal i
         `
         },
         { role: 'user', content: prompt } // Send the user's input as-is
-      ]
+      ],
+      max_tokens: 300 // Limit the output to 300 tokens
+
     })
 
     // Check if the response contains the generated text

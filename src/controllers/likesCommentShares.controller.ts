@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
-import Action from "../models/likesCommentsShares.model";
+import Action,{ IAction } from "../models/likesCommentsShares.model";
 import { extractUserIdFromToken } from "../utils/extractUserIdFromToken";
 
-// Unified API for Creating Like, Comment, or Share
+// Unified API for Creating Like, Comment, Share, or Reply
 export const createAction = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const { postId, actionType, commentText } = req.body;
+    const { postId, actionType, commentText, parentCommentId } = req.body;
 
     // Validate required fields
     if (!postId || !actionType) {
@@ -31,8 +31,17 @@ export const createAction = async (req: Request, res: Response): Promise<Respons
 
     // Create action
     const actionData: any = { userId, postId, actionType };
-    if (actionType === "comment" && commentText) {
+    if ((actionType === "comment" || actionType === "reply") && commentText) {
       actionData.commentText = commentText;
+    }
+    if (actionType === "reply") {
+      if (!parentCommentId) {
+        return res.status(400).json({ message: "Parent comment ID is required for replies" });
+      }
+      actionData.parentCommentId = parentCommentId;
+
+      // Increment reply count for the parent comment
+      await Action.findByIdAndUpdate(parentCommentId, { $inc: { replyCount: 1 } });
     }
 
     const action = new Action(actionData);
@@ -45,32 +54,23 @@ export const createAction = async (req: Request, res: Response): Promise<Respons
   }
 };
 
-// Unified API for Deleting Like, Comment, or Share
+// Unified API for Deleting Like, Comment, Share, or Reply
 export const deleteAction = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { actionId } = req.params;
 
-    // Extract user ID from token
-    const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ message: "Authorization token is required" });
-    }
-    const userId = extractUserIdFromToken(
-      JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
-    );
-
-    // Find action by ID and check ownership
     const action = await Action.findById(actionId);
     if (!action) {
       return res.status(404).json({ message: "Action not found" });
     }
-    if (action.userId.toString() !== userId) {
-      return res.status(403).json({ message: "You are not authorized to delete this action" });
+
+    const typedAction = action as IAction;
+    if (typedAction.actionType === "reply" && typedAction.parentCommentId) {
+      await Action.findByIdAndUpdate(typedAction.parentCommentId, { $inc: { replyCount: -1 } });
     }
 
-    // Delete action
     await action.deleteOne();
-    return res.status(200).json({ message: `${action.actionType} deleted successfully` });
+    return res.status(200).json({ message: `${typedAction.actionType} deleted successfully` });
   } catch (error) {
     console.error("Error deleting action:", error);
     return res.status(500).json({ message: "Internal Server Error" });
@@ -91,8 +91,9 @@ export const getCounts = async (req: Request, res: Response): Promise<Response> 
     const likesCount = await Action.countDocuments({ postId, actionType: "like" });
     const commentsCount = await Action.countDocuments({ postId, actionType: "comment" });
     const sharesCount = await Action.countDocuments({ postId, actionType: "share" });
+    const repliesCount = await Action.countDocuments({ postId, actionType: "reply" });
 
-    return res.status(200).json({ likesCount, commentsCount, sharesCount });
+    return res.status(200).json({ likesCount, commentsCount, sharesCount, repliesCount });
   } catch (error) {
     console.error("Error fetching counts:", error);
     return res.status(500).json({ message: "Internal Server Error" });

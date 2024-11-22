@@ -2,15 +2,18 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 // Define the interface for the Like, Comment, and Share model
 export interface IAction extends Document {
-  userId: mongoose.Schema.Types.ObjectId; // User who liked/commented/shared
-  postId: mongoose.Schema.Types.ObjectId; // Post that was liked/commented/shared
-  actionType: 'like' | 'comment' | 'share'; // Type of action
-  commentText?: string; // Only required for comments
-  likeCount?: number; // Total likes for the post
-  commentCount?: number; // Total comments for the post
-  shareCount?: number; // Total shares for the post
-  createdAt?: Date; // Action creation timestamp
+  userId: mongoose.Schema.Types.ObjectId;
+  postId: mongoose.Schema.Types.ObjectId;
+  actionType: "like" | "comment" | "share" | "reply"; // Includes "reply"
+  commentText?: string;
+  parentCommentId?: mongoose.Schema.Types.ObjectId;
+  likeCount?: number;
+  commentCount?: number;
+  shareCount?: number;
+  replyCount?: number;
+  createdAt?: Date;
 }
+
 
 const ActionSchema: Schema<IAction> = new Schema(
   {
