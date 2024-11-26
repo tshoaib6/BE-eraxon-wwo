@@ -33,6 +33,8 @@
 
 // below code have functionality of multer
 import Post from '../models/post.model'; 
+import { sendEmail } from '../utils/email';
+import User from '../models/user.model';
 
 
 interface PostData {
@@ -43,8 +45,12 @@ interface PostData {
 
 }
 
-export const createPostService = async (postData: PostData) => {
-    const newPost = new Post({
+export const createPostService = async (postData: PostData , email:string) => {
+const user = await User.findOne({email})
+if(!user){
+    throw new Error ("email not found")
+}
+const newPost = new Post({
         userId: postData.userId, 
         content: postData.content,
         mediaUrl:postData.mediaUrl ,
@@ -52,6 +58,7 @@ export const createPostService = async (postData: PostData) => {
 
 
     });
-
+    
+    await sendEmail(user.email,"post published successfully",'../views/postCreated.templete.html',"")
     return await newPost.save();
 };

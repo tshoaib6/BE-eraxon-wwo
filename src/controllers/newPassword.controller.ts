@@ -195,7 +195,7 @@ export const setNewPassword = async (req: Request, res: Response) => {
     const passwordUpdatedNotification = new Notification({
       user: userId, // Use extracted userId
       title: "Password Updated Successfully",
-      description: "Your password has been updated successfully.",
+      description: "password has been updated successfully.",
       url: "/profile/settings",
       status: "unread",
       type: "password-update",

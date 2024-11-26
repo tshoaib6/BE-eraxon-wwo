@@ -9,6 +9,7 @@ import { cloudinary } from "../middleware/cloudinary"; // Ensure correct Cloudin
 import multer = require("multer");
 import Notification from '../models/notification.model'; // Adjust the path accordingly
 import { getSocket } from '../socket'
+import { sendEmail } from "../utils/email";
 
 // // Extend Request to include file path
 // interface MulterRequest extends Request {
@@ -200,10 +201,12 @@ export const createPost = async (
         .json({ message: "Authorization token is required" });
     }
 
-    // Extract userId from token
-    const userId = extractUserIdFromToken(
-      JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
+    // Extract userId and email from token payload
+    const tokenPayload = JSON.parse(
+      Buffer.from(token.split(".")[1], "base64").toString()
     );
+    const userId = extractUserIdFromToken(tokenPayload);
+    const email = tokenPayload.email; // Assuming the token contains the user's email
 
     // Store media URLs
     const mediaUrls: string[] = [];
@@ -228,15 +231,16 @@ export const createPost = async (
     }
 
     // Create the post by calling the service
-    const post = await createPostService(postData);
+    const post = await createPostService(postData, email);
 
     // Create a new notification for the post creation
     const notification = new Notification({
-      title: 'Your Post Has Published Successfully',
+      user: userId, // Use extracted userId
+      title: "Post Published Successfully",
       description: "", // Shortened description
-      url: "/", // Link to the new post
-      type: 'post_creation',
-      status: 'unread',
+      url: "/community", // Link to the new post
+      type: "post_creation",
+      status: "unread",
       createdAt: new Date(),
     });
 
@@ -256,9 +260,9 @@ export const createPost = async (
       };
 
       // Emit the notification with the correct type
-      socket.emit('notification', notificationPayload);
+      socket.emit("notification", notificationPayload);
     } else {
-      console.warn('Socket.IO instance is not available');
+      console.warn("Socket.IO instance is not available");
     }
 
     return res.status(201).json({ message: "Post created successfully", post });
@@ -274,6 +278,7 @@ export const createPost = async (
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 
 
 // The getPosts function remains unchanged
