@@ -26,8 +26,10 @@ const UserSchema: Schema<IUser> = new Schema(
 
     // New fields for password reset
     resetOTP: { type: String }, // Stores the OTP for password reset
-    otpExpires: { type: Date } // Stores OTP expiration time
+    otpExpires: { type: Date }, // Stores OTP expiration time
 
+    // Added active status field
+    isActive: { type: Boolean, default: true } // Default is active
   },
   {
     timestamps: true

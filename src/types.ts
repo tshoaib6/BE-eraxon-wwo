@@ -7,4 +7,5 @@ export interface LoginResponse {
       firstName: string;
       lastName: string;
       email: string;
+      isActive:Boolean;
   }

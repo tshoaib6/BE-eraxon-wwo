@@ -102,7 +102,9 @@ export const loginUser = async (
     user: {
       firstName: user.firstName,
       lastName: user.lastName,
-      email: user.email
+      email: user.email,
+      isActive: user.isActive,  // Add isActive to the user object
+
     },
     token
   }
