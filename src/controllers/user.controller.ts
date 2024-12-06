@@ -23,6 +23,8 @@ export const signup = async (req: Request, res: Response): Promise<Response> => 
     // Sign up the user and retrieve the user object with userId
     const user = await signUpUser(firstName, lastName, email, password);
     const userId = user.id;  // Assuming `signUpUser` returns a user object with `id`
+    user.paymentStatus = user.paymentStatus || 'unpaid'; // Set default status
+
 console.log("userId from backend",userId)
     // Create the welcome notification
     const welcomeNotification = new Notification({
@@ -162,6 +164,7 @@ export const login = async (req: Request, res: Response) => {
     return res.status(200).json({
       message: 'Login successful',
       user: response.user,
+
       token: response.token,
     });
   } catch (error) {

@@ -208,27 +208,92 @@ export const getComments = async (req: Request, res: Response) => {
 
 export default getComments;
 // Unified API for Deleting Like, Comment, Share, or Reply
+// export const deleteAction = async (req: Request, res: Response): Promise<Response> => {
+//   try {
+//     const { actionId } = req.params;
+
+//     const action = await Action.findById(actionId);
+//     if (!action) {
+//       return res.status(404).json({ message: "Action not found" });
+//     }
+
+//     const typedAction = action as IAction;
+//     if (typedAction.actionType === "reply" && typedAction.parentCommentId) {
+//       await Action.findByIdAndUpdate(typedAction.parentCommentId, { $inc: { replyCount: -1 } });
+//     }
+
+//     await action.deleteOne();
+//     return res.status(200).json({ message: `${typedAction.actionType} deleted successfully` });
+//   } catch (error) {
+//     console.error("Error deleting action:", error);
+//     return res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
+
+
+
+
+
+
+
+
+
+
+
+
 export const deleteAction = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { actionId } = req.params;
 
+    // Find the action to be deleted
     const action = await Action.findById(actionId);
     if (!action) {
       return res.status(404).json({ message: "Action not found" });
     }
 
     const typedAction = action as IAction;
-    if (typedAction.actionType === "reply" && typedAction.parentCommentId) {
-      await Action.findByIdAndUpdate(typedAction.parentCommentId, { $inc: { replyCount: -1 } });
+
+    // Extract user ID from token to check if the user owns the action
+    const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+    if (!token) {
+      return res.status(401).json({ message: "Authorization token is required" });
+    }
+    const decodedToken = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
+    const userId = extractUserIdFromToken(decodedToken);
+
+    // Check if the action is a reply and if the user is the owner of the reply
+    if (typedAction.actionType === "reply") {
+      if (typedAction.userId.toString() !== userId) {
+        return res.status(403).json({ message: "You can only delete your own replies" });
+      }
+
+      // Decrement the reply count of the parent comment
+      if (typedAction.parentCommentId) {
+        await Action.findByIdAndUpdate(typedAction.parentCommentId, {
+          $inc: { replyCount: -1 },
+        });
+      }
     }
 
+    // Now delete the action (whether it's a like, comment, or reply)
     await action.deleteOne();
+
+    // Return a success message
     return res.status(200).json({ message: `${typedAction.actionType} deleted successfully` });
   } catch (error) {
     console.error("Error deleting action:", error);
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
+
+
+
+
+
+
+
 
 // API for Getting Total Counts of Likes, Comments, and Shares
 export const getCounts = async (req: Request, res: Response): Promise<Response> => {

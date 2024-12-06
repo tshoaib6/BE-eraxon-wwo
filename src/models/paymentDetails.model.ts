@@ -6,7 +6,8 @@ interface IPayment extends Document {
   expiryDate: string;
   cvv: string;
   addressOrTaxId?: string;
-  user?: mongoose.Schema.Types.ObjectId; // Optional reference to the User model
+  user: mongoose.Schema.Types.ObjectId; // Reference to the User model
+  plan: mongoose.Schema.Types.ObjectId; // Reference to the PlanDetails model
 }
 
 const PaymentSchema: Schema = new Schema({
@@ -33,7 +34,12 @@ const PaymentSchema: Schema = new Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User', // Reference to the User model
-    required: false,
+    required: true,
+  },
+  plan: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'PlanDetails', // Reference to the PlanDetails model
+    required: true,
   },
 });
 

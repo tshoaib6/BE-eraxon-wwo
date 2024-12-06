@@ -29,7 +29,9 @@ const UserSchema: Schema<IUser> = new Schema(
     otpExpires: { type: Date }, // Stores OTP expiration time
 
     // Added active status field
-    isActive: { type: Boolean, default: true } // Default is active
+    isActive: { type: Boolean, default: true }, // Default is active
+    paymentStatus: { type: String, enum: ['paid', 'unpaid'], default: 'unpaid' }, // New field to track payment status
+
   },
   {
     timestamps: true

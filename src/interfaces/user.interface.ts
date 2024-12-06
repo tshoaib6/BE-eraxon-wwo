@@ -13,6 +13,7 @@ export interface IUser extends Document {
   resetOTP?: string; // Add this line
   otpExpires?: Date; // Add this line 
   isActive:Boolean;
+  paymentStatus: 'paid' | 'unpaid';  // Adding the paymentStatus field with possible values
   comparePassword(candidatePassword: string): Promise<boolean>;
 
 }
