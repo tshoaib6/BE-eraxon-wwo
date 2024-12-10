@@ -52,7 +52,7 @@ export const createAction = async (
     await action.save();
     const populatedAction = await Action.findById(action._id).populate(
       "userId",
-      "firstName lastName"
+      "firstName lastName profilePic"
     );
     // Fetch the post to get the user ID (creator of the post)
     const post = await Post.findById(postId);
@@ -161,6 +161,7 @@ export const getComments = async (req: Request, res: Response) => {
           updatedAt: 1,
           "user.firstName": 1, // Include firstName of the user
           "user.lastName": 1, // Include lastName of the user
+          "user.profilePic":1,
         },
       },
     ]);

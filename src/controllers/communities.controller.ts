@@ -130,7 +130,7 @@ export const getPostsByCommunityId = async (req: Request, res: Response) => {
     // Fetch posts based on the constructed query
     // const posts = (await Post.find(query).limit(limitNumber)) || [];
     const posts = await Post.find(query)
-      .populate("userId", "firstName lastName") // Specify fields to populate
+      .populate("userId", "firstName lastName profilePic") // Specify fields to populate
       .limit(limitNumber)
       .exec();
 

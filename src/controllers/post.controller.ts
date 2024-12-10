@@ -171,7 +171,7 @@ interface NotificationPayload {
 }
 
 export const createPost = async (
-  req: MulterRequest,
+  req: Request,
   res: Response,
   err: any
 ): Promise<Response> => {
@@ -216,7 +216,6 @@ export const createPost = async (
       const filesArray = Array.isArray(req.files)
         ? req.files
         : Object.values(req.files).flat();
-      console.log(req.files);
       filesArray.forEach((file) => {
         if (file.path) {
           mediaUrls.push(file.path);
@@ -232,6 +231,12 @@ export const createPost = async (
 
     // Create the post by calling the service
     const post = await createPostService(postData, email);
+
+    // Populate user details (firstName, lastName, profilePic)
+    const populatedPost = await post.populate({
+      path: "userId",
+      select: "firstName lastName profilePic", // Fields to populate
+    });
 
     // Create a new notification for the post creation
     const notification = new Notification({
@@ -265,7 +270,11 @@ export const createPost = async (
       console.warn("Socket.IO instance is not available");
     }
 
-    return res.status(201).json({ message: "Post created successfully", post });
+    // Return the populated post with user details
+    return res.status(201).json({
+      message: "Post created successfully",
+      post: populatedPost,
+    });
   } catch (error) {
     console.error("Error:", JSON.stringify(error, null, 2));
 
@@ -288,10 +297,12 @@ export const getPosts = async (
 ): Promise<Response> => {
   try {
     const posts = await Post.find()
-      .populate("userId", "firstName lastName email")
-      .select("content mediaUrl createdAt")
+      .populate("userId", "firstName lastName email profilePic") // Populating user details, including profilePic
+      .select("content mediaUrl createdAt") // Select only the necessary fields for the post
       .sort({ createdAt: -1 }); // Sorting posts in descending order by createdAt
 
+    // Optionally, you can add 'profilePic' directly to the post select, 
+    // but since it's already populated via 'userId', it's not necessary to do so here.
     return res.status(200).json(posts);
   } catch (error) {
     console.error("Error fetching posts:", error);

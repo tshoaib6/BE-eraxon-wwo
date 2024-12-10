@@ -80,3 +80,32 @@ export const updateProfile = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal Server Error' });
   }
 };
+
+
+export const getProfile = async (req: Request, res: Response) => {
+  try {
+    // Extract the token from cookies or headers
+    const token = req.cookies?.token || req.headers['authorization']?.split(' ')[1];
+
+    if (!token) {
+      return res.status(401).json({ message: 'Authorization token is required' });
+    }
+
+    // Extract userId from the token (assuming extractUserIdFromToken decodes the JWT)
+    const userId = extractUserIdFromToken(
+      JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
+    );
+
+    // Find the user in the database
+    const user = await User.findById(userId).select('profilePic firstName lastName email'); // Select only required fields
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.status(200).json({ message: 'Profile fetched successfully', user });
+  } catch (error) {
+    console.error('Error in getProfile:', error);
+    return res.status(500).json({ message: 'Internal Server Error' });
+  }
+};

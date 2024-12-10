@@ -8,4 +8,6 @@ export interface LoginResponse {
       lastName: string;
       email: string;
       isActive:Boolean;
+      profilePic:string;
+      gender:string;
   }
