@@ -6,6 +6,10 @@ import Post from "../models/post.model"; // Assuming you have a Notification mod
 import { getSocket } from "../socket";
 import User from "../models/user.model"; // Assuming you have a Notification model
 import mongoose from "mongoose";
+
+
+
+
 export const createAction = async (
   req: Request,
   res: Response
@@ -116,34 +120,88 @@ export const createAction = async (
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
+
+
+
+
+
+
+
+
+
 export const getComments = async (req: Request, res: Response) => {
   try {
     const { postId } = req.params;
-    // Correct way to create ObjectId using 'new'
     const objectIdPostId = new mongoose.Types.ObjectId(postId);
-    // Find all comments for the post
+
     const comments = await Action.aggregate([
       {
         $match: { postId: objectIdPostId, actionType: "comment" },
       },
       {
         $lookup: {
-          from: "actions", // The collection name where actions are stored
+          from: "actions",
           localField: "_id",
           foreignField: "parentCommentId",
-          as: "replies", // Populate the replies for the comment
+          as: "replies",
         },
       },
       {
         $lookup: {
-          from: "users", // The collection where users are stored
-          localField: "userId", // Field in Action collection
-          foreignField: "_id", // Field in User collection
-          as: "user", // New field to store the populated user data
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "user",
         },
       },
       {
-        $unwind: { path: "$user", preserveNullAndEmptyArrays: true }, // Unwind user to avoid nested array
+        $unwind: { path: "$user", preserveNullAndEmptyArrays: true },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "replies.userId", // Lookup user info for replies
+          foreignField: "_id",
+          as: "repliesUsers",
+        },
+      },
+      {
+        $addFields: {
+          "replies": {
+            $map: {
+              input: "$replies",
+              as: "reply",
+              in: {
+                _id: "$$reply._id",
+                userId: "$$reply.userId",
+                postId: "$$reply.postId",
+                actionType: "$$reply.actionType",
+                commentText: "$$reply.commentText",
+                parentCommentId: "$$reply.parentCommentId",
+                likeCount: "$$reply.likeCount",
+                commentCount: "$$reply.commentCount",
+                shareCount: "$$reply.shareCount",
+                replyCount: "$$reply.replyCount",
+                createdAt: "$$reply.createdAt",
+                updatedAt: "$$reply.updatedAt",
+                user: {
+                  $arrayElemAt: [
+                    {
+                      $filter: {
+                        input: "$repliesUsers",
+                        as: "replyUser",
+                        cond: { $eq: ["$$replyUser._id", "$$reply.userId"] },
+                      },
+                    },
+                    0,
+                  ],
+                },
+              },
+            },
+          },
+        },
       },
       {
         $project: {
@@ -156,21 +214,25 @@ export const getComments = async (req: Request, res: Response) => {
           commentCount: 1,
           shareCount: 1,
           replyCount: 1,
-          replies: 1, // Include replies in the result
+          replies: 1,
           createdAt: 1,
           updatedAt: 1,
-          "user.firstName": 1, // Include firstName of the user
-          "user.lastName": 1, // Include lastName of the user
-          "user.profilePic":1,
+          user: {
+            firstName: "$user.firstName",
+            lastName: "$user.lastName",
+            profilePic: "$user.profilePic",
+          },
         },
       },
     ]);
+
     res.json(comments);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching comments and replies" });
   }
 };
+
 export const deleteAction = async (
   req: Request,
   res: Response
