@@ -106,7 +106,7 @@ export const loginUser = async (
       isActive: user.isActive,  // Add isActive to the user object
       profilePic:user.profilePic,
       gender:user.gender,
-
+      paymentStatus: user.paymentStatus,
     },
     token
   }

@@ -10,4 +10,5 @@ export interface LoginResponse {
       isActive:Boolean;
       profilePic:string;
       gender:string;
+      paymentStatus:string;
   }

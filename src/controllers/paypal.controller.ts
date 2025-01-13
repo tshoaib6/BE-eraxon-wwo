@@ -146,6 +146,93 @@ const getPayPalAccessToken = async () => {
 };
 
 // Create a PayPal payment
+// export const createPayPalPayment = async (req: Request, res: Response) => {
+//   try {
+//     const { amount, currency } = req.body;
+
+//     // Token check and decoding for user verification
+//     const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+//     if (!token) {
+//       return res.status(401).json({ message: "Authorization token is required" });
+//     }
+
+//     let tokenPayload;
+//     try {
+//       tokenPayload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
+//     } catch (error: any) {
+//       return res.status(500).json({ message: "Error decoding token", error: error.message });
+//     }
+
+//     // Extract userId from the token
+//     const userId = extractUserIdFromToken(tokenPayload);
+
+//     // Get PayPal access token
+//     const accessToken = await getPayPalAccessToken();
+
+//     // Create a payment
+//     const paymentData = {
+//       intent: 'sale',
+//       payer: {
+//         payment_method: 'paypal',
+//       },
+//       transactions: [
+//         {
+//           amount: {
+//             total: amount,
+//             currency: currency || 'USD',
+//           },
+//           description: 'Payment description',
+//         },
+//       ],
+//       redirect_urls: {
+//         return_url: 'http://localhost:5173',  // User will be redirected here after approval
+//         cancel_url: 'http://localhost:5173',
+//       },
+//     };
+
+//     const response = await axios.post('https://api.sandbox.paypal.com/v1/payments/payment', paymentData, {
+//       headers: {
+//         Authorization: `Bearer ${accessToken}`,
+//       },
+//     });
+
+//     // Log the PayPal response for debugging
+//     console.log("PayPal API Response:", response.data);
+
+//     // Get the approval URL to redirect the user to PayPal
+//     const approvalUrl = response.data.links.find((link: any) => link.rel === 'approval_url')?.href;
+
+//     if (!approvalUrl) {
+//       return res.status(500).json({ message: 'Approval URL not found in the PayPal response' });
+//     }
+
+//     // Save the payment details to the database
+//     const paymentDetails = new Payment({
+//       paymentId: response.data.id,  // PayPal payment ID
+//       payerId: response.data.payer.payer_info?.payer_id || 'unknown',  // Optional: handle missing payer info
+//       user: userId,  // User reference
+//       amount: amount,
+//       currency: currency || 'USD',
+//       paymentStatus: 'created',  // Initial status
+//       payerEmail: response.data.payer.payer_info?.email || 'unknown',  // Optional: capture payer email
+//       transactionId: response.data.transactions[0]?.related_resources?.[0]?.sale?.id || '',  // Capture transaction ID if available
+//       createdAt: new Date(),
+//     });
+
+  
+
+//     // Save to the database
+//     await paymentDetails.save();
+
+//     // Send the approval URL back to the frontend
+//     return res.status(200).json({ message: 'Payment created successfully', approvalUrl });
+//   } catch (error: any) {
+//     console.error('Error creating PayPal payment:', error);
+//     return res.status(500).json({ message: 'Error creating PayPal payment', error: error.message });
+//   }
+// };
+
+
 export const createPayPalPayment = async (req: Request, res: Response) => {
   try {
     const { amount, currency } = req.body;
@@ -213,14 +300,28 @@ export const createPayPalPayment = async (req: Request, res: Response) => {
       user: userId,  // User reference
       amount: amount,
       currency: currency || 'USD',
-      paymentStatus: 'created',  // Initial status
+      paymentStatus: 'completed',  // Initial status
       payerEmail: response.data.payer.payer_info?.email || 'unknown',  // Optional: capture payer email
       transactionId: response.data.transactions[0]?.related_resources?.[0]?.sale?.id || '',  // Capture transaction ID if available
       createdAt: new Date(),
     });
 
-    // Save to the database
+    // Save payment details to the database
     await paymentDetails.save();
+
+    // Check if the paymentStatus is 'completed' to update the user's paymentStatus
+    if (paymentDetails.paymentStatus === 'completed') {
+      // Update the user's paymentStatus to 'paid'
+      const updatedUser = await User.findOneAndUpdate(
+        { _id: userId },
+        { paymentStatus: 'paid' },
+        { new: true }
+      );
+
+      if (!updatedUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+    }
 
     // Send the approval URL back to the frontend
     return res.status(200).json({ message: 'Payment created successfully', approvalUrl });
@@ -229,6 +330,7 @@ export const createPayPalPayment = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Error creating PayPal payment', error: error.message });
   }
 };
+
 
 
 
