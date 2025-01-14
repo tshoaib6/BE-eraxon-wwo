@@ -59,6 +59,42 @@ interface DecodedToken {
 }
 
 // Get notifications with unread count for the user
+// export const getNotifications = async (req: Request, res: Response): Promise<Response> => {
+//   try {
+//     const token = req.headers['authorization']?.split(' ')[1];
+//     if (!token) {
+//       return res.status(401).json({ message: 'Unauthorized: No token provided' });
+//     }
+
+//     // Verify the token
+//     const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as unknown as DecodedToken;
+//     const userId = decoded.userId;
+
+//     if (!userId) {
+//       return res.status(401).json({ message: 'Invalid or expired token' });
+//     }
+
+//     // Fetch notifications for the user, sorted by creation date
+//     const notifications = await Notification.find({ user: userId }).sort({ createdAt: -1 });
+//     const unreadCount = await Notification.countDocuments({ user: userId, isRead: false });
+
+//     return res.status(200).json({
+//       message: 'Notifications fetched successfully',
+//       notifications,
+//       unreadCount,
+//     });
+//   } catch (error) {
+//     console.error('Error in getNotifications:', error);
+//     const errorMessage = error instanceof Error ? error.message : 'Internal Server Error';
+//     return res.status(500).json({ message: errorMessage });
+//   }
+// };
+
+
+
+
+
+// populated profilePic from user 
 export const getNotifications = async (req: Request, res: Response): Promise<Response> => {
   try {
     const token = req.headers['authorization']?.split(' ')[1];
@@ -67,15 +103,18 @@ export const getNotifications = async (req: Request, res: Response): Promise<Res
     }
 
     // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as unknown as DecodedToken;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as DecodedToken;
     const userId = decoded.userId;
 
     if (!userId) {
       return res.status(401).json({ message: 'Invalid or expired token' });
     }
 
-    // Fetch notifications for the user, sorted by creation date
-    const notifications = await Notification.find({ user: userId }).sort({ createdAt: -1 });
+    // Fetch notifications for the user, sorted by creation date, and populate profilePic
+    const notifications = await Notification.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .populate('user', 'profilePic'); // Populate only the profilePic field from the User model
+
     const unreadCount = await Notification.countDocuments({ user: userId, isRead: false });
 
     return res.status(200).json({
@@ -89,6 +128,14 @@ export const getNotifications = async (req: Request, res: Response): Promise<Res
     return res.status(500).json({ message: errorMessage });
   }
 };
+
+
+
+
+
+
+
+
 
 // Mark a notification as read or mark all as read
 export const markNotificationAsRead = async (req: Request, res: Response): Promise<Response> => {
