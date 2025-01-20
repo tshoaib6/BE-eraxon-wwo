@@ -12,6 +12,8 @@ export interface IPayment extends Document {
   payerEmail?: string;
   transactionId?: string;
   createdAt: Date;
+    plan: mongoose.Schema.Types.ObjectId; 
+  
 }
 
 // Define the Payment schema
@@ -25,6 +27,11 @@ const paymentSchema = new Schema<IPayment>(
     paymentStatus: { type: String, required: true },
     payerEmail: { type: String },
     transactionId: { type: String },
+      plan: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'PlanDetails',
+        required: true,
+      },
   },
   { timestamps: true }
 );
