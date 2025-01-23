@@ -1,16 +1,28 @@
 import express from 'express';
-import { createOrUpdateStep,getStep,getRecordById,getStepDataByUserID,searchAndSortRecords } from '../controllers/steps.controller';
+import { createOrUpdateObituaryForm } from '../controllers/steps.controller';
 import verifyJwt from '../middleware/verifyJwt';
-import { stepFormUpload } from '../middleware/stepForm'; // Ensure this import matches the export
+import { uploadFiles } from '../middleware/stepperFormImages';
+import multer from 'multer';
+import path from 'path'; // Import the path module
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, './uploads'); // Temporary folder for file uploads
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // Unique filename with extension
+  },
+});
+
+const upload = multer({ storage });
 
 const router = express.Router();
 
-router.post('/steps', verifyJwt, stepFormUpload, createOrUpdateStep);
-router.get('/getStepsData', getStep);
-router.get('/steps/record/:recordId', getRecordById);
-router.get('/getStepDataByUserID', getStepDataByUserID);
-router.get('/obituaries', searchAndSortRecords);
-
+// Using upload.fields to handle multiple file inputs with unique field names
+router.post('/createObituary', upload.fields([
+  { name: 'survivingFamilyImages', maxCount: 10 }, // Field for surviving family images
+  { name: 'predeceasedFamilyImages', maxCount: 10 }, // Field for predeceased family images
+  { name: 'mediaFiles', maxCount: 5 } // Field for media files
+]), uploadFiles, createOrUpdateObituaryForm);
 
 export default router;
-

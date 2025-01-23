@@ -6,7 +6,8 @@ export interface StepData extends Document {
   status: 'drafted' | 'submitted'; 
  
     basicInfo: {
-      nameOfDeceased?: string;
+      firstNameOfDeceased?: string;
+      lastNameOfDeceased? : string;
       dateOfBirth?: string | null;
       dateOfDeath?: string | null;
       gender?: string;
@@ -86,7 +87,8 @@ const CombinedFormSchema: Schema<StepData> = new Schema(
     },
 
       basicInfo: {
-        nameOfDeceased: { type: String, required: false },
+        firstNameOfDeceased: { type: String, required: false },
+        lastNameOfDeceased: { type: String, required: false },
         dateOfBirth: { type: String, required: false },
         dateOfDeath: { type: String, required: false },
         gender: { type: String, required: false },
