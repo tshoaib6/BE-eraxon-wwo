@@ -20,46 +20,53 @@ export const uploadFiles = async (req: Request, res: Response, next: NextFunctio
   try {
     const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
 
-    // Parse text fields
+    // Parse text fields from req.body and provide default values
     req.body.basicInfo = req.body.basicInfo ? JSON.parse(req.body.basicInfo) : {};
-    req.body.family = req.body.family ? JSON.parse(req.body.family) : { survivingFamily: [], predeceasedFamily: [] };
-    req.body.memorialServices = req.body.memorialServices ? JSON.parse(req.body.memorialServices) : [];
-    req.body.personalDetails = req.body.personalDetails ? JSON.parse(req.body.personalDetails) : { education: [] };
+    req.body.family = req.body.family
+      ? JSON.parse(req.body.family)
+      : { survivingFamily: [], predeceasedFamily: [] };
+    req.body.memorialServices = req.body.memorialServices
+      ? JSON.parse(req.body.memorialServices)
+      : [];
+    req.body.personalDetails = req.body.personalDetails
+      ? JSON.parse(req.body.personalDetails)
+      : { education: [] };
     req.body.mediaFiles = req.body.mediaFiles ? JSON.parse(req.body.mediaFiles) : [];
 
     // Process surviving family images
     if (files?.['survivingFamilyImages']) {
-      req.body.family.survivingFamily = await Promise.all(
+      req.body.family.survivingFamily = req.body.family.survivingFamily || [];
+      const updatedSurvivingFamily = await Promise.all(
         files['survivingFamilyImages'].map(async (file, index) => ({
-          ...req.body.family.survivingFamily[index],
+          ...req.body.family.survivingFamily[index], // Retain existing data
           memberImage: await uploadToCloudinary(file),
         }))
       );
+      req.body.family.survivingFamily = updatedSurvivingFamily;
     }
 
     // Process predeceased family images
     if (files?.['predeceasedFamilyImages']) {
-      req.body.family.predeceasedFamily = await Promise.all(
+      req.body.family.predeceasedFamily = req.body.family.predeceasedFamily || [];
+      const updatedPredeceasedFamily = await Promise.all(
         files['predeceasedFamilyImages'].map(async (file, index) => ({
-          ...req.body.family.predeceasedFamily[index],
+          ...req.body.family.predeceasedFamily[index], // Retain existing data
           memberImage: await uploadToCloudinary(file),
         }))
       );
+      req.body.family.predeceasedFamily = updatedPredeceasedFamily;
     }
 
     // Process media files
     if (files?.['mediaFiles']) {
-      const existingMediaFiles = req.body.mediaFiles;
-      req.body.mediaFiles = [
-        ...existingMediaFiles,
-        ...(await Promise.all(
-          files['mediaFiles'].map(async (file) => ({
-            file: await uploadToCloudinary(file),
-            date: new Date().toISOString(),
-            note: file.originalname,
-          }))
-        )),
-      ];
+      const uploadedMediaFiles = await Promise.all(
+        files['mediaFiles'].map(async (file) => ({
+          file: await uploadToCloudinary(file),
+          date: new Date().toISOString(),
+          note: file.originalname,
+        }))
+      );
+      req.body.mediaFiles = [...req.body.mediaFiles, ...uploadedMediaFiles];
     }
 
     // Proceed to the next middleware/controller

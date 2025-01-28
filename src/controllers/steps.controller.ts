@@ -247,8 +247,7 @@
         console.log('Decoded userId:', userId);
   
         // Destructure fields from the request body
-        const { basicInfo, family, memorialServices, personalDetails } = req.body;
-        let mediaFiles = req.body.mediaFiles; // Get media files from FormData (if any)
+        const { basicInfo, family, memorialServices, personalDetails, mediaFiles } = req.body;
   
         // Log the received data for debugging
         console.log('Received data:', { basicInfo, family, memorialServices, personalDetails, mediaFiles });
@@ -260,49 +259,33 @@
           console.log('Existing form:', combinedForm);
   
           // Update the existing form based on the provided fields
-          if (basicInfo) {
-            combinedForm.basicInfo = { ...combinedForm.basicInfo, ...basicInfo };
-          }
-  
-          if (family) {
-            if (family.survivingFamily) {
-              combinedForm.family.survivingFamily = [
-                ...(combinedForm.family.survivingFamily || []),
-                ...family.survivingFamily,
-              ];
-            }
-            if (family.predeceasedFamily) {
-              combinedForm.family.predeceasedFamily = [
-                ...(combinedForm.family.predeceasedFamily || []),
-                ...family.predeceasedFamily,
-              ];
-            }
-          }
-  
-          if (memorialServices) {
-            combinedForm.memorialServices = [
-              ...(combinedForm.memorialServices || []),
-              ...memorialServices,
-            ];
-          }
-  
-          if (personalDetails) {
-            combinedForm.personalDetails = {
-              ...combinedForm.personalDetails,
-              ...personalDetails,
-              education: [
-                ...(combinedForm.personalDetails.education || []),
-                ...(personalDetails.education || []),
-              ],
-            };
-          }
-  
-          if (mediaFiles) {
-            combinedForm.mediaFiles = [
-              ...(combinedForm.mediaFiles || []),
-              ...mediaFiles,
-            ];
-          }
+          combinedForm.basicInfo = { ...combinedForm.basicInfo, ...basicInfo };
+          combinedForm.family = {
+            survivingFamily: [
+              ...(combinedForm.family.survivingFamily || []),
+              ...(family.survivingFamily || []),
+            ],
+            predeceasedFamily: [
+              ...(combinedForm.family.predeceasedFamily || []),
+              ...(family.predeceasedFamily || []),
+            ],
+          };
+          combinedForm.memorialServices = [
+            ...(combinedForm.memorialServices || []),
+            ...(memorialServices || []),
+          ];
+          combinedForm.personalDetails = {
+            ...combinedForm.personalDetails,
+            ...personalDetails,
+            education: [
+              ...(combinedForm.personalDetails.education || []),
+              ...(personalDetails.education || []),
+            ],
+          };
+          combinedForm.mediaFiles = [
+            ...(combinedForm.mediaFiles || []),
+            ...(mediaFiles || []),
+          ];
   
           // Save the updated form
           await combinedForm.save();
