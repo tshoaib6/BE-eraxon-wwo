@@ -4,8 +4,8 @@ import { extractUserIdFromToken } from '../utils/extractUserIdFromToken'
 import CombinedForm from '../models/stepform.model'
 
 interface UploadedFiles {
-  memberImage?: Express.Multer.File[]
-  file?: Express.Multer.File[]
+  memberImage?: Express.Multer.File[] // Handle member image files
+  file?: Express.Multer.File[] // Handle media files
 }
 
 interface FamilyMember {
@@ -64,7 +64,7 @@ export const createOrUpdateStep = async (
 
     const survivingFamily = parsedData.family?.survivingFamily || []
     const predeceasedFamily = parsedData.family?.predeceasedFamily || []
-    const mediaFiles = Array.isArray(parsedData.mediaFiles) ? parsedData.mediaFiles : [] // Ensure mediaFiles is always an array
+    const mediaFiles = Array.isArray(parsedData.mediaFiles) ? parsedData.mediaFiles : []
 
     console.log('Surviving family:', survivingFamily)
 
@@ -90,37 +90,66 @@ export const createOrUpdateStep = async (
         }))
       : []
 
-    const existingStep = await Step.findOneAndUpdate(
-      { userId },
-      {
-        $set: {
-          basicInfo: parsedData.basicInfo,
-          family: {
-            ...parsedData.family,
-            survivingFamily: updatedSurvivingFamily,
-            predeceasedFamily: updatedPredeceasedFamily
-          },
-          memorialServices: parsedData.memorialServices,
-          personalDetails: parsedData.personalDetails,
-          mediaFiles: updatedmediaFiles, // Remove spreading and ensure array
-          status: parsedData.status || 'submitted'
-        }
-      },
-      { new: true, upsert: true }
-    )
+    // Check if an existing draft form exists for the user
+    let existingStep = await Step.findOne({ userId, status: 'drafted' })
 
-    return res.status(existingStep ? 200 : 201).json({
-      message: existingStep
-        ? 'Steps data updated successfully'
-        : 'Steps data created successfully',
-      steps: existingStep
-    })
+    if (existingStep) {
+      // Update the existing draft with the new data
+      existingStep = await Step.findOneAndUpdate(
+        { _id: existingStep._id },
+        {
+          $set: {
+            basicInfo: parsedData.basicInfo,
+            family: {
+              ...parsedData.family,
+              survivingFamily: updatedSurvivingFamily,
+              predeceasedFamily: updatedPredeceasedFamily
+            },
+            memorialServices: parsedData.memorialServices,
+            personalDetails: parsedData.personalDetails,
+            mediaFiles: updatedmediaFiles, 
+            status: parsedData.status || 'drafted' // Keep status as drafted
+          }
+        },
+        { new: true }
+      )
+
+      return res.status(200).json({
+        message: 'Draft form updated successfully',
+        steps: existingStep
+      })
+    } else {
+      // No draft form exists, create a new one
+      const newStep = new Step({
+        userId,
+        basicInfo: parsedData.basicInfo,
+        family: {
+          ...parsedData.family,
+          survivingFamily: updatedSurvivingFamily,
+          predeceasedFamily: updatedPredeceasedFamily
+        },
+        memorialServices: parsedData.memorialServices,
+        personalDetails: parsedData.personalDetails,
+        mediaFiles: updatedmediaFiles,
+        status: parsedData.status || 'drafted' // Set status as drafted by default
+      })
+
+      const savedStep = await newStep.save()
+
+      return res.status(201).json({
+        message: 'New form created successfully',
+        steps: savedStep
+      })
+    }
+
   } catch (error) {
     console.error('Error in createOrUpdateStep:', error)
     const errorMessage = error instanceof Error ? error.message : 'Internal Server Error'
     return res.status(500).json({ message: errorMessage })
   }
 }
+
+
 
 // extra code 
 // export const createOrUpdateStep = async (req: Request, res: Response): Promise<Response> => {
