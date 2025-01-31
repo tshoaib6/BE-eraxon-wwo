@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 interface IUserInformation extends Document {
   city: string;
   country: string;
-  phoneNumber: string;
+  phonenumber: string;
   user: mongoose.Schema.Types.ObjectId; // Reference to User model
 }
 
@@ -18,7 +18,7 @@ const UserInformationSchema: Schema = new Schema({
     required: true,
     trim: true,
   },
-  phoneNumber: {
+  phonenumber: {
     type: String,
     required: true,
    

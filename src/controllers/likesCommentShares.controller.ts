@@ -74,7 +74,9 @@ export const createAction = async (
         user: postCreatorId,
         title: "Your post got a new like!",
         description: `User ${user.firstName} liked your post.`,
-        url: `/posts/${postId}`,
+        // url: `/posts/${postId}`,
+        url: `/`,
+
         type: "like",
         status: "unread",
         createdAt: new Date(),

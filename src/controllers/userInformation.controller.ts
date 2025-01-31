@@ -18,12 +18,12 @@ export const createUserInformation = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid or expired token' });
     }
 
-    const { city, country, phoneNumber } = req.body;
+    const { city, country, phonenumber } = req.body;
 
     const userInfo = new UserInformation({
       city,
       country,
-      phoneNumber,
+      phonenumber,
       user: userId,
     });
 

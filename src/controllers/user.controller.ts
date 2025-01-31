@@ -31,7 +31,7 @@ console.log("userId from backend",userId)
       user: userId,  // Associate the notification with the registered user
       title: 'Welcome to WWO Platform!',
       description: 'We are excited to have you here.',
-      url: '/welcome',
+      url: '/',
       status: 'unread',
       type: 'welcome',
       createdAt: new Date(),
