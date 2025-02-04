@@ -243,7 +243,7 @@ export const createPost = async (
       user: userId, // Use extracted userId
       title: "Post Published Successfully",
       description: "", // Shortened description
-      url: "/community", // Link to the new post
+      url: "/", // Link to the new post
       type: "post_creation",
       status: "unread",
       createdAt: new Date(),

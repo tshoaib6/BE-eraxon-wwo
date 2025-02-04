@@ -12,8 +12,8 @@ interface IPlanDetails extends Document {
 
 const PlanDetailsSchema: Schema<IPlanDetails> = new Schema(
   {
-    planName: { type: String, required: true, trim: true },
-    planPrice: { type: String, required: true, trim: true },
+    planName: { type: String, required: false, trim: true },
+    planPrice: { type: String, required: false, trim: true },
     planFeatures: { type: [String], required: true }, // Array of strings for features
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false }, // Reference to User schema
   },

@@ -69,121 +69,121 @@ import Invoice from '../models/invoice.model'; // Import the Invoice model
 
 
 
-export const createPayment = async (req: Request, res: Response) => {
-  try {
-    const { fullName = "", cardNumber = "", expiryDate = "", cvv = "", addressOrTaxId = "", planId = "" } = req.body;
+// export const createPayment = async (req: Request, res: Response) => {
+//   try {
+//     const { fullName = "", cardNumber = "", expiryDate = "", cvv = "", addressOrTaxId = "", planId = "" } = req.body;
 
-    // Check if planId is provided
-    if (!planId) {
-      return res.status(400).json({ message: 'Plan ID is required' });
-    }
+//     // Check if planId is provided
+//     if (!planId) {
+//       return res.status(400).json({ message: 'Plan ID is required' });
+//     }
 
-    // Token check and decoding for user verification
-    const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ message: "Authorization token is required" });
-    }
+//     // Token check and decoding for user verification
+//     const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+//     if (!token) {
+//       return res.status(401).json({ message: "Authorization token is required" });
+//     }
 
-    let tokenPayload;
-    try {
-      tokenPayload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
-    } catch (error: any) {
-      return res.status(500).json({ message: "Error decoding token", error: error.message });
-    }
+//     let tokenPayload;
+//     try {
+//       tokenPayload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
+//     } catch (error: any) {
+//       return res.status(500).json({ message: "Error decoding token", error: error.message });
+//     }
 
-    const userId = extractUserIdFromToken(tokenPayload); // This function should extract userId from the decoded token
+//     const userId = extractUserIdFromToken(tokenPayload); // This function should extract userId from the decoded token
 
-    // Fetch plan details based on planId
-    const plan = await PlanDetails.findById(planId);
-    if (!plan) {
-      return res.status(400).json({ message: 'Invalid plan ID' });
-    }
+//     // Fetch plan details based on planId
+//     const plan = await PlanDetails.findById(planId);
+//     if (!plan) {
+//       return res.status(400).json({ message: 'Invalid plan ID' });
+//     }
 
-    // Create a new Payment record without the paymentStatus field
-    const newPayment = new Payment({
-      fullName,
-      cardNumber,
-      expiryDate,
-      cvv,
-      addressOrTaxId,
-      user: userId,
-      plan: planId,
-      // Don't add paymentStatus here as it's tracked in the User model
-    });
+//     // Create a new Payment record without the paymentStatus field
+//     const newPayment = new Payment({
+//       fullName,
+//       cardNumber,
+//       expiryDate,
+//       cvv,
+//       addressOrTaxId,
+//       user: userId,
+//       plan: planId,
+//       // Don't add paymentStatus here as it's tracked in the User model
+//     });
 
-    // Save the payment record
-    const savedPayment = await newPayment.save();
+//     // Save the payment record
+//     const savedPayment = await newPayment.save();
 
-    // Fetch user and update payment status to 'paid'
-    const user = await User.findById(userId);
-    if (user) {
-      user.paymentStatus = 'paid'; // Update the user's payment status
-      await user.save();
-    }
+//     // Fetch user and update payment status to 'paid'
+//     const user = await User.findById(userId);
+//     if (user) {
+//       user.paymentStatus = 'unpaid'; // Update the user's payment status
+//       await user.save();
+//     }
 
-    // Generate invoice after successful payment
-    const invoice = new Invoice({
-      invoiceId: `INV-${new Date().getTime()}`, // Generate unique invoice ID
-      user: userId,
-      subscriptionDate: new Date(), // Set subscription date as current date
-      subscriptionEndDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Set subscription end date 1 month after the current date
-      planName: plan.planName,
-      planPrice: plan.planPrice,
-    });
+//     // Generate invoice after successful payment
+//     const invoice = new Invoice({
+//       invoiceId: `INV-${new Date().getTime()}`, // Generate unique invoice ID
+//       user: userId,
+//       subscriptionDate: new Date(), // Set subscription date as current date
+//       subscriptionEndDate: new Date(new Date().setMonth(new Date().getMonth() + 1)), // Set subscription end date 1 month after the current date
+//       planName: plan.planName,
+//       planPrice: plan.planPrice,
+//     });
 
-    // Save the generated invoice
-    await invoice.save();
+//     // Save the generated invoice
+//     await invoice.save();
 
-    return res.status(201).json({ message: 'Payment created successfully', payment: savedPayment, invoice });
-  } catch (error: any) {
-    console.error('Error creating payment:', error);
-    return res.status(500).json({ message: 'Error creating payment', error: error.message });
-  }
-};
+//     return res.status(201).json({ message: 'Payment created successfully', payment: savedPayment, invoice });
+//   } catch (error: any) {
+//     console.error('Error creating payment:', error);
+//     return res.status(500).json({ message: 'Error creating payment', error: error.message });
+//   }
+// };
 
 
 
-export const getPaymentDetails = async (req: Request, res: Response) => {
-  try {
-    // Extract token from headers or cookies to authenticate user
-    const token =
-      req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
-    if (!token) {
-      return res.status(401).json({ message: "Authorization token is required" });
-    }
+// export const getPaymentDetails = async (req: Request, res: Response) => {
+//   try {
+//     // Extract token from headers or cookies to authenticate user
+//     const token =
+//       req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+//     if (!token) {
+//       return res.status(401).json({ message: "Authorization token is required" });
+//     }
 
-    // Decode token to extract userId
-    let tokenPayload;
-    try {
-      tokenPayload = JSON.parse(
-        Buffer.from(token.split(".")[1], "base64").toString()
-      );
-    } catch (error: any) {
-      return res.status(500).json({ message: "Error decoding token", error: error.message });
-    }
+//     // Decode token to extract userId
+//     let tokenPayload;
+//     try {
+//       tokenPayload = JSON.parse(
+//         Buffer.from(token.split(".")[1], "base64").toString()
+//       );
+//     } catch (error: any) {
+//       return res.status(500).json({ message: "Error decoding token", error: error.message });
+//     }
 
-    const userId = extractUserIdFromToken(tokenPayload); // Extract userId from token payload
+//     const userId = extractUserIdFromToken(tokenPayload); // Extract userId from token payload
 
-    // Fetch payments for the authenticated user and populate plan details
-    const payments = await Payment.find({ user: userId }).populate("plan");
+//     // Fetch payments for the authenticated user and populate plan details
+//     const payments = await Payment.find({ user: userId }).populate("plan");
 
-    // If no payments are found, return an appropriate response
-    if (!payments || payments.length === 0) {
-      return res.status(404).json({ message: "No payments found for this user" });
-    }
+//     // If no payments are found, return an appropriate response
+//     if (!payments || payments.length === 0) {
+//       return res.status(404).json({ message: "No payments found for this user" });
+//     }
 
-    return res.status(200).json({
-      message: "Payments retrieved successfully",
-      payments, // Includes plan details due to populate
-    });
-  } catch (error: any) {
-    console.error("Error retrieving payment details:", error); // Log error for debugging
-    return res.status(500).json({
-      message: "Error retrieving payment details",
-      error: error.message,
-    });
-  }
-};
+//     return res.status(200).json({
+//       message: "Payments retrieved successfully",
+//       payments, // Includes plan details due to populate
+//     });
+//   } catch (error: any) {
+//     console.error("Error retrieving payment details:", error); // Log error for debugging
+//     return res.status(500).json({
+//       message: "Error retrieving payment details",
+//       error: error.message,
+//     });
+//   }
+// };
 
 
 
