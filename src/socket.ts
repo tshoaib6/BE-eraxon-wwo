@@ -1,12 +1,17 @@
 import { Server } from 'socket.io';
 import http from 'http';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 let io: Server;
 
 export const initializeSocket = (server: http.Server) => {
+  const allowedOrigin = process.env.FRONT_END_URL || 'http://localhost:5173'; // Fallback if not defined
+
   io = new Server(server, {
     cors: {
-      origin: 'http://localhost:5173', // Replace with your frontend URL
+      origin: allowedOrigin,
       methods: ['GET', 'POST'],
       allowedHeaders: ['Content-Type'],
       credentials: true,
