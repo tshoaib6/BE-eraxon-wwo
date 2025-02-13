@@ -128,46 +128,80 @@ export const createOrUpdateStep = async (
   }
 };
 
-export const getStepDataByUserID = async (
-  req: Request,
-  res: Response
-): Promise<Response> => {
+// export const getStepDataByUserID = async (
+//   req: Request,
+//   res: Response
+// ): Promise<Response> => {
+//   try {
+//     const token =
+//       req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+//     if (!token) {
+//       return res
+//         .status(401)
+//         .json({ message: "Authorization token is required" });
+//     }
+
+//     const userId = extractUserIdFromToken(
+//       JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
+//     );
+//     if (!userId) {
+//       return res.status(401).json({ message: "Invalid or expired token" });
+//     }
+
+//     const userStepData = await Step.findOne({ userId });
+
+//     if (!userStepData) {
+//       return res
+//         .status(404)
+//         .json({ message: "No step data found for the user" });
+//     }
+
+//     return res.status(200).json({
+//       message: "Step data retrieved successfully",
+//       steps: userStepData,
+//       status: userStepData.status || "drafted",
+//     });
+//   } catch (error) {
+//     console.error("Error in getStep:", error);
+//     const errorMessage =
+//       error instanceof Error ? error.message : "Internal Server Error";
+//     return res.status(500).json({ message: errorMessage });
+//   }
+// };
+
+
+
+export const getStepDataByUserID = async (req: Request, res: Response): Promise<Response> => {
   try {
     const token =
       req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+
     if (!token) {
-      return res
-        .status(401)
-        .json({ message: "Authorization token is required" });
+      return res.status(401).json({ message: "Authorization token is required" });
     }
 
     const userId = extractUserIdFromToken(
       JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
     );
+
     if (!userId) {
-      return res.status(401).json({ message: "Invalid or expired token" });
+      return res.status(401).json({ message: "Invalid or missing token" });
     }
 
-    const userStepData = await Step.findOne({ userId });
+    const stepsData = await Step.findOne({ userId });
 
-    if (!userStepData) {
-      return res
-        .status(404)
-        .json({ message: "No step data found for the user" });
+    if (!stepsData) {
+      return res.status(204).send("no data found for this user"); // 204 No Content when no data exists
     }
 
-    return res.status(200).json({
-      message: "Step data retrieved successfully",
-      steps: userStepData,
-      status: userStepData.status || "drafted",
-    });
+    return res.status(200).json({ message: "Steps data fetched successfully", steps: stepsData });
   } catch (error) {
-    console.error("Error in getStep:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Internal Server Error";
-    return res.status(500).json({ message: errorMessage });
+    console.error("Error in getStepDataByUserID:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+
 
 export const getStep = async (
   req: Request,

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express'
+import { Request, response, Response } from 'express'
 import axios from 'axios'
 import dotenv from 'dotenv'
 import { extractUserIdFromToken } from '../utils/extractUserIdFromToken'
@@ -6,6 +6,7 @@ import Payment from '../models/payment.model' // Import the Invoice model
 import User from '../models/user.model' // Import User model
 import Invoice from '../models/invoice.model' // Import the Invoice model
 import PlanDetails from '../models/planDetails.model'
+import { access } from 'fs'
 
 dotenv.config() // Load environment variables
 
@@ -29,6 +30,7 @@ const getPayPalAccessToken = async () => {
       }
     )
     return response.data.access_token
+    // console.log("access token",response.data.access_token)
   } catch (error: any) {
     console.error(
       'Error retrieving PayPal access token:',
@@ -243,268 +245,268 @@ export const capturePayPalPayment = async (req: Request, res: Response) => {
       .json({ message: 'Error capturing PayPal payment', error: error.message })
   }
 }
-
-const luhnCheck = (cardNumber: string) => {
-  // Ensure cardNumber is a valid string and has a length
-  if (!cardNumber || cardNumber.length < 13 || cardNumber.length > 19) {
-    return false // Invalid card number
-  }
-
-  let sum = 0
-  let shouldDouble = false
-
-  // Iterate over the digits from right to left
-  for (let i = cardNumber.length - 1; i >= 0; i--) {
-    let digit = parseInt(cardNumber.charAt(i), 10)
-
-    if (shouldDouble) {
-      digit *= 2
-      if (digit > 9) {
-        digit -= 9
-      }
-    }
-
-    sum += digit
-    shouldDouble = !shouldDouble
-  }
-
-  // Return true if sum is divisible by 10
-  return sum % 10 === 0
-}
-
-export const createCardPayment = async (req: Request, res: Response) => {
-  try {
-    const { fullName, cardNumber, expiryDate, addressOrTaxId, planId } =
-      req.body
-
-    // Ensure cardNumber is provided and valid
-    if (
-      !cardNumber ||
-      typeof cardNumber !== 'string' ||
-      cardNumber.length === 0
-    ) {
-      return res
-        .status(400)
-        .json({ message: 'Card number is required and cannot be empty' })
-    }
-
-    // Token check and decoding for user verification
-    const token =
-      req.cookies?.token || req.headers['authorization']?.split(' ')[1]
-    if (!token) {
-      return res
-        .status(401)
-        .json({ message: 'Authorization token is required' })
-    }
-
-    let tokenPayload
+  export const createPayPalCardPayment = async (req: Request, res: Response) => {
     try {
-      tokenPayload = JSON.parse(
-        Buffer.from(token.split('.')[1], 'base64').toString()
-      )
+      const { amount, currency, planId, card } = req.body;
+
+      if (!planId) {
+        return res.status(400).json({ message: "Plan ID is required" });
+      }
+
+      // Token check and decoding for user verification
+      const token =
+        req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+      if (!token) {
+        return res
+          .status(401)
+          .json({ message: "Authorization token is required" });
+      }
+
+      let tokenPayload;
+      try {
+        tokenPayload = JSON.parse(
+          Buffer.from(token.split(".")[1], "base64").toString()
+        );
+      } catch (error: any) {
+        return res
+          .status(500)
+          .json({ message: "Error decoding token", error: error.message });
+      }
+
+      const userId = extractUserIdFromToken(tokenPayload);
+
+      // Get PayPal access token
+      const accessToken = await getPayPalAccessToken();
+
+      // Create payment data for card payment
+      const paymentData = {
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            amount: {
+              currency_code: currency || "USD",
+              value: amount,
+            },
+            description: "Card Payment",
+          },
+        ],
+        payment_source: {
+          card: {
+            number: card.number, // Example: "4111111111111111"
+            expiry: card.expiry, // Example: "2025-12"
+            security_code: card.cvv, // Example: "123"
+            name: card.name,
+          },
+        },
+      };
+
+      const response = await axios.post(
+        "https://api-m.sandbox.paypal.com/v2/checkout/orders",
+        paymentData,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("PayPal Card Payment Response:", response.data);
+
+      if (!response.data.id) {
+        return res.status(500).json({ message: "Failed to create payment order" });
+      }
+
+      // Save payment details in the database
+      const paymentDetails = new Payment({
+        paymentId: response.data.id,
+        user: userId,
+        amount: amount,
+        currency: currency || "USD",
+        paymentStatus: "pending",
+        createdAt: new Date(),
+        plan: planId,
+      });
+
+      await paymentDetails.save();
+
+      return res.status(200).json({
+        message: "Card Payment order created successfully",
+        orderId: response.data.id,
+      });
     } catch (error: any) {
-      return res
-        .status(500)
-        .json({ message: 'Error decoding token', error: error.message })
+      console.error("Error creating PayPal card payment:", error);
+      return res.status(500).json({
+        message: "Error creating PayPal card payment",
+        error: error.message,
+      });
     }
+  };
 
-    const userId = extractUserIdFromToken(tokenPayload)
 
-    // Validate card number using Luhn Algorithm
-    if (!luhnCheck(cardNumber)) {
-      return res.status(400).json({ message: 'Invalid card number' })
-    }
+export const capturePayPalCardPayment = async (req: Request, res: Response) => {
+  try {
+    const { orderId } = req.body;
 
-    // Validate expiry date
-    const [month, year] = expiryDate.split('/').map(Number)
-    const now = new Date()
-    const expiry = new Date(`20${year}-${month.toString().padStart(2, '0')}-01`)
-    if (expiry <= now) {
-      return res.status(400).json({ message: 'Invalid or expired expiry date' })
+    if (!orderId) {
+      return res.status(400).json({ message: "Order ID is required" });
     }
 
     // Get PayPal access token
-    const accessToken = await getPayPalAccessToken()
-    if (!accessToken) {
-      return res
-        .status(400)
-        .json({ message: 'Unable to retrieve PayPal access token' })
-    }
+    const accessToken = await getPayPalAccessToken();
 
-    // Create a payment on PayPal
-    const paymentData = {
-      intent: 'sale',
-      payer: {
-        payment_method: 'credit_card',
-        funding_instruments: [
-          {
-            credit_card: {
-              number: cardNumber,
-              type: 'visa', // Update dynamically based on card type
-              expire_month: month,
-              expire_year: `20${year}`, // Fixed template literal usage
-              cvv2: '123', // Collect securely
-              first_name: fullName.split(' ')[0],
-              last_name: fullName.split(' ')[1] || '',
-              billing_address: {
-                line1: addressOrTaxId || 'No Address Provided',
-                city: 'Unknown',
-                state: 'Unknown',
-                postal_code: '00000',
-                country_code: 'US'
-              }
-            }
-          }
-        ]
-      },
-      transactions: [
-        {
-          amount: {
-            total: '10.00',
-            currency: 'USD'
-          },
-          payee: { email: 'sb-jfler34872293@business.example.com' }, // Replace with a valid merchant account
-          description: 'Payment using credit or debit card'
-        }
-      ]
-    }
-
-    // Sending request to PayPal API
+    // Capture the payment
     const response = await axios.post(
-      'https://api.sandbox.paypal.com/v1/payments/payment',
-      paymentData,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}` // Fixed template literal usage
-        }
-      }
-    )
-
-    // Log the PayPal response for debugging
-    console.log('PayPal API Response:', response.data)
-
-    // Check for successful payment creation
-    if (response.data.state === 'approved') {
-      return res.status(200).json({
-        message: 'Payment approved successfully',
-        paymentDetails: response.data
-      })
-    } else {
-      return res.status(400).json({
-        message: 'Payment creation failed',
-        error: response.data
-      })
-    }
-  } catch (error: any) {
-    console.error('Error creating card payment:', error)
-    return res
-      .status(500)
-      .json({ message: 'Error creating card payment', error: error.message })
-  }
-}
-
-// Capture payment if necessary
-export const captureCardPayment = async (req: Request, res: Response) => {
-  try {
-    const { paymentId } = req.body
-
-    if (!paymentId) {
-      return res.status(400).json({ message: 'Payment ID is required' })
-    }
-
-    const accessToken = await getPayPalAccessToken()
-
-    const response = await axios.post(
-      `https://api.sandbox.paypal.com/v1/payments/payment/${paymentId}/execute`,
+      `https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`,
       {},
       {
         headers: {
-          Authorization: `Bearer ${accessToken}`
-        }
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
       }
-    )
+    );
 
-    // Update the payment in the database
+    console.log("PayPal Capture Response:", response.data);
+
+    if (!response.data.status || response.data.status !== "COMPLETED") {
+      return res.status(500).json({ message: "Failed to capture payment" });
+    }
+
+    // Update payment status in database
     const updatedPayment = await Payment.findOneAndUpdate(
-      { paymentId },
+      { paymentId: orderId },
       {
-        paymentStatus: 'completed'
+        paymentStatus: "completed",
+        transactionId: response.data.purchase_units[0].payments.captures[0].id,
       },
       { new: true }
-    )
+    );
 
     return res.status(200).json({
       success: true,
-      message: 'Payment successfully captured',
-      paymentDetails: updatedPayment
-    })
+      message: "Card Payment successfully captured",
+      paymentDetails: updatedPayment,
+    });
   } catch (error: any) {
-    console.error('Error capturing card payment:', error)
+    console.error("Error capturing PayPal card payment:", error);
     return res.status(500).json({
-      message: 'Error capturing card payment',
-      error: error.message
-    })
+      message: "Error capturing PayPal card payment",
+      error: error.message,
+    });
   }
-}
+};
+
+// old code 
+// export const getPaypalPaymentHistory = async (req: Request, res: Response) => {
+//   try {
+//     const token =
+//       req.cookies?.token || req.headers['authorization']?.split(' ')[1]
+//     if (!token) {
+//       return res
+//         .status(401)
+//         .json({ message: 'Authorization token is required' })
+//     }
+
+//     let tokenPayload
+//     try {
+//       tokenPayload = JSON.parse(
+//         Buffer.from(token.split('.')[1], 'base64').toString()
+//       )
+//     } catch (error: any) {
+//       return res
+//         .status(500)
+//         .json({ message: 'Error decoding token', error: error.message })
+//     }
+
+//     const userId = extractUserIdFromToken(tokenPayload)
+
+//     // Fetch the payments, populate plan and user fields
+//     const payments = await Payment.find({ user: userId })
+//       .populate('plan') // Populate the plan details
+//       .populate({
+//         path: 'user', // Populate the user details
+//         select: 'firstName lastName email' // Only include these fields
+//       })
+
+//     // Fetch the invoices
+//     const invoices = await Invoice.find({ user: userId })
+
+//     // Fetch user details directly to include paymentStatus
+//     const user = await User.findById(userId)
+//     const userPaymentStatus = user ? user.paymentStatus : 'unpaid' // Default to "unpaid" if user is not found
+
+//     if (!payments || payments.length === 0) {
+//       return res
+//         .status(404)
+//         .json({ message: 'No payments found for this user' })
+//     }
+
+//     return res.status(200).json({
+//       message: 'Payment and invoice history retrieved successfully',
+//       payments, // Includes populated plan and user details
+//       invoices,
+//       userPaymentStatus // Include user payment status
+//     })
+//   } catch (error: any) {
+//     console.error('Error retrieving payment history:', error)
+//     return res.status(500).json({
+//       message: 'Error retrieving payment history',
+//       error: error.message
+//     })
+//   }
+// }
+
 
 export const getPaypalPaymentHistory = async (req: Request, res: Response) => {
   try {
-    const token =
-      req.cookies?.token || req.headers['authorization']?.split(' ')[1]
+    // Extract token from headers or cookies
+    const token = req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+
     if (!token) {
-      return res
-        .status(401)
-        .json({ message: 'Authorization token is required' })
+      return res.status(401).json({ message: "Authorization token is required" });
     }
 
-    let tokenPayload
+    // Decode token safely
+    let tokenPayload;
     try {
-      tokenPayload = JSON.parse(
-        Buffer.from(token.split('.')[1], 'base64').toString()
-      )
+      tokenPayload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString());
     } catch (error: any) {
-      return res
-        .status(500)
-        .json({ message: 'Error decoding token', error: error.message })
+      return res.status(400).json({ message: "Invalid token format" });
     }
 
-    const userId = extractUserIdFromToken(tokenPayload)
+    const userId = extractUserIdFromToken(tokenPayload);
 
-    // Fetch the payments, populate plan and user fields
-    const payments = await Payment.find({ user: userId })
-      .populate('plan') // Populate the plan details
-      .populate({
-        path: 'user', // Populate the user details
-        select: 'firstName lastName email' // Only include these fields
-      })
+    // Fetch all necessary data in parallel for efficiency
+    const [payments, invoices, user] = await Promise.all([
+      Payment.find({ user: userId }).populate("plan").populate({
+        path: "user",
+        select: "firstName lastName email",
+      }),
+      Invoice.find({ user: userId }),
+      User.findById(userId),
+    ]);
 
-    // Fetch the invoices
-    const invoices = await Invoice.find({ user: userId })
+    const userPaymentStatus = user ? user.paymentStatus : "unpaid"; // Default: "unpaid"
 
-    // Fetch user details directly to include paymentStatus
-    const user = await User.findById(userId)
-    const userPaymentStatus = user ? user.paymentStatus : 'unpaid' // Default to "unpaid" if user is not found
-
-    if (!payments || payments.length === 0) {
-      return res
-        .status(404)
-        .json({ message: 'No payments found for this user' })
+    // If no payments found, return 204 No Content
+    if (payments.length === 0) {
+      return res.status(204).json({ message: "No payments found for this user" });
     }
 
+    // Return fetched data
     return res.status(200).json({
-      message: 'Payment and invoice history retrieved successfully',
-      payments, // Includes populated plan and user details
+      message: "Payment and invoice history retrieved successfully",
+      payments,
       invoices,
-      userPaymentStatus // Include user payment status
-    })
+      userPaymentStatus,
+    });
+
   } catch (error: any) {
-    console.error('Error retrieving payment history:', error)
-    return res.status(500).json({
-      message: 'Error retrieving payment history',
-      error: error.message
-    })
+    console.error("Error retrieving payment history:", error);
+    return res.status(500).json({ message: "Internal server error", error: error.message });
   }
-}
+};
 
 export const cancelSubscription = async (req: Request, res: Response) => {
   try {
