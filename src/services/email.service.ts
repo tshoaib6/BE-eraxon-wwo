@@ -1,48 +1,130 @@
-import nodemailer from 'nodemailer';
-import fs from 'fs';
-import path from 'path';
-import ErrorHandler from '../utils/errorHandler';
+// import nodemailer from 'nodemailer';
+// import ErrorHandler from '../utils/errorHandler';
+
+// export const sendVerificationEmail = async (email: string, token: string) => {
+//   try {
+//     const transporter = nodemailer.createTransport({
+//       service: 'gmail',
+//       auth: {
+//         user: process.env.EMAIL_USER,
+//         pass: process.env.EMAIL_PASS,
+//       },
+//     });
+
+//     const verificationLink = `${process.env.FRONT_END_URL}/verify-email?token=${token}`;
+//     console.log('Lin',process.env.FRONT_END_URL)
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: email,
+//       subject: 'Email Verification',
+//       html: `<h1>Email Verification</h1><p>Please click the link below to verify your email:</p><a href="${verificationLink}">Verify Email</a>`,
+//     };
+
+//     await transporter.sendMail(mailOptions);
+//   } catch (error) {
+//     throw new ErrorHandler(500, 'Failed to send verification email');
+//   }
+// };
+
+// original code
+
+// import nodemailer from 'nodemailer';
+// import fs from 'fs';
+// import path from 'path';
+// import ErrorHandler from '../utils/errorHandler';
+
+// export const sendVerificationEmail = async (email: string, token: string) => {
+//   try {
+//     // Read the template file
+//     const templatePath = path.resolve(__dirname, '../views/verifyEmail.templete.html');
+//     const template = fs.readFileSync(templatePath, 'utf-8');
+
+//     // Create the verification link
+//     const verificationLink = `${process.env.FRONT_END_URL}/verify-email?token=${token}`;
+
+//     // Replace the token placeholder with the actual link
+//     const htmlContent = template.replace('{{verificationLink}}', verificationLink);
+
+//     // Set up nodemailer transport
+//     const transporter = nodemailer.createTransport({
+//       service: 'gmail',
+//       auth: {
+//         user: process.env.EMAIL_USER,
+//         pass: process.env.EMAIL_PASS,
+//       },
+//     });
+
+//     // Mail options
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: email,
+//       subject: 'Email Verification',
+//       html: htmlContent, // Use the modified HTML content
+//     };
+
+//     // Send the email
+//     await transporter.sendMail(mailOptions);
+//   } catch (error) {
+//     throw new ErrorHandler(500, 'Failed to send verification email');
+//   }
+// };
+
+import nodemailer from "nodemailer";
+import fs from "fs";
+import path from "path";
+import dotenv from "dotenv";
+import SMTPTransport from "nodemailer/lib/smtp-transport";
+import ErrorHandler from "../utils/errorHandler";
+
+dotenv.config();
 
 export const sendVerificationEmail = async (email: string, token: string) => {
   try {
-    // Read the template file
-    const templatePath = path.resolve(__dirname, '../views/verifyEmail.templete.html');
-    const template = fs.readFileSync(templatePath, 'utf-8');
+    console.log("SMTP User:", process.env.EMAIL_USER);
+    console.log(
+      "SMTP Password:",
+      process.env.EMAIL_PASS ? "Loaded" : "Not Loaded"
+    );
+    console.log("SMTP Port:", process.env.SMTP_PORT);
 
-    // Create the verification link
+    const templatePath = path.resolve(
+      __dirname,
+      "../views/verifyEmail.templete.html"
+    );
+    const template = fs.readFileSync(templatePath, "utf-8");
     const verificationLink = `${process.env.FRONT_END_URL}/verify-email?token=${token}`;
+    const htmlContent = template.replace(
+      "{{verificationLink}}",
+      verificationLink
+    );
 
-    // Replace the token placeholder
-    const htmlContent = template.replace('{{verificationLink}}', verificationLink);
-
-    // Updated Hostinger SMTP configuration
+    // Updated transporter configuration
     const transporter = nodemailer.createTransport({
-      host: 'smtp.hostinger.com', // Hostinger's SMTP server
-      port: 465, // Recommended secure port
-      secure: true, // Use SSL
+      host: "smtp.hostinger.com",
+      port: 465,
+      secure: true,
       auth: {
-        user: process.env.EMAIL_USER, // Your Hostinger email address
-        pass: process.env.EMAIL_PASS, // Your Hostinger email password
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
       },
-      debug: true,
-      logger: true,
-      tls: {
-        // For local development only (bypass SSL verification)
-        rejectUnauthorized: false
-      }
-    });
+      logger: true, // Logs SMTP traffic
+      debug: true, // Outputs debug messages
+    } as SMTPTransport.Options);
 
-    // Mail options
+    await transporter.verify();
+    console.log("✅ SMTP connection successful!");
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
-      subject: 'Email Verification',
+      subject: "Email Verification",
       html: htmlContent,
     };
 
-    // Send the email
     await transporter.sendMail(mailOptions);
-  } catch (error) {
-    throw new ErrorHandler(500, 'Failed to send verification email');
+    console.log(`✅ Verification email sent to ${email}`);
+  } catch (error: any) {
+    console.error("Error sending email:", error.response || error);
+    throw new ErrorHandler(500, "Failed to send verification email");
   }
 };

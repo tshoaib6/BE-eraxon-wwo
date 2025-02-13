@@ -10,17 +10,16 @@ const app: Application = express();
 // Middleware
 app.use(express.json());
 
-// Custom CORS middleware
+// Custom CORS middleware with dynamic origin
 app.use((req: Request, res: Response, next: NextFunction) => {
-  // res.setHeader('Access-Control-Allow-Origin', 'http://18.234.186.13'); // Replace with your frontend URL
-  res.setHeader('Access-Control-Allow-Origin', '  http://localhost:5173'); // Replace with your frontend URL
+  const allowedOrigin = process.env.FRONT_END_URL || 'http://localhost:5173'; // Fallback if not defined
 
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Max-Age', '1800');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Methods', 'PUT, POST, GET, DELETE, PATCH, OPTIONS');
   
-  // If the request method is OPTIONS, end the request here.
   if (req.method === 'OPTIONS') {
     return res.sendStatus(204);
   }
