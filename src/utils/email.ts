@@ -117,15 +117,79 @@
 //   }
 // };
 
+// import nodemailer from "nodemailer";
+// import fs from "fs";
+// import path from "path";
+// import dotenv from "dotenv";
+// import SMTPTransport from "nodemailer/lib/smtp-transport";
+// import ErrorHandler from "../utils/errorHandler";
+
+// dotenv.config();
+
+// export const sendEmail = async (
+//   email: string,
+//   subject: string,
+//   templatePath: string,
+//   replacements: Record<string, string> = {}
+// ) => {
+//   try {
+//     console.log("SMTP User:", process.env.EMAIL_USER);
+//     console.log(
+//       "SMTP Password:",
+//       process.env.EMAIL_PASS ? "Loaded" : "Not Loaded"
+//     );
+//     console.log("SMTP Port:", process.env.SMTP_PORT);
+
+//     const resolvedTemplatePath = path.resolve(__dirname, templatePath);
+//     let template = fs.readFileSync(resolvedTemplatePath, "utf-8");
+
+//     // Replace placeholders dynamically
+//     Object.keys(replacements).forEach((key) => {
+//       template = template.replace(
+//         new RegExp(`{{${key}}}`, "g"),
+//         replacements[key]
+//       );
+//     });
+
+//     // Updated transporter configuration
+//     const transporter = nodemailer.createTransport({
+//       host: "smtp.hostinger.com",
+//       port: 465,
+//       secure: true,
+//       auth: {
+//         user: process.env.EMAIL_USER,
+//         pass: process.env.EMAIL_PASS,
+//       },
+//       logger: true,
+//       debug: true,
+//     } as SMTPTransport.Options);
+
+//     await transporter.verify();
+//     console.log("✅ SMTP connection successful!");
+
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: email,
+//       subject,
+//       html: template,
+//     };
+
+//     await transporter.sendMail(mailOptions);
+//     console.log(`✅ Email sent successfully to ${email}`);
+//   } catch (error: any) {
+//     console.error("Error sending email:", error.response || error);
+//     throw new ErrorHandler(500, "Failed to send email");
+//   }
+// };
+
 import nodemailer from "nodemailer";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import SMTPTransport from "nodemailer/lib/smtp-transport";
+import ejs from "ejs";
 import ErrorHandler from "../utils/errorHandler";
-
 dotenv.config();
-
 export const sendEmail = async (
   email: string,
   subject: string,
@@ -134,24 +198,18 @@ export const sendEmail = async (
 ) => {
   try {
     console.log("SMTP User:", process.env.EMAIL_USER);
-    console.log(
-      "SMTP Password:",
-      process.env.EMAIL_PASS ? "Loaded" : "Not Loaded"
-    );
     console.log("SMTP Port:", process.env.SMTP_PORT);
-
-    const resolvedTemplatePath = path.resolve(__dirname, templatePath);
-    let template = fs.readFileSync(resolvedTemplatePath, "utf-8");
-
-    // Replace placeholders dynamically
-    Object.keys(replacements).forEach((key) => {
-      template = template.replace(
-        new RegExp(`{{${key}}}`, "g"),
-        replacements[key]
-      );
-    });
-
-    // Updated transporter configuration
+    console.log(
+      "Resolved template path:",
+      path.resolve(__dirname, templatePath)
+    );
+    // Read and render the template using EJS
+    const templateContent = fs.readFileSync(
+      path.resolve(__dirname, templatePath),
+      "utf-8"
+    );
+    const template = ejs.render(templateContent, replacements);
+    // Configure nodemailer transporter
     const transporter = nodemailer.createTransport({
       host: "smtp.hostinger.com",
       port: 465,
@@ -163,19 +221,16 @@ export const sendEmail = async (
       logger: true,
       debug: true,
     } as SMTPTransport.Options);
-
     await transporter.verify();
-    console.log("✅ SMTP connection successful!");
-
-    const mailOptions = {
+    console.log(":white_check_mark: SMTP connection successful!");
+    // Send email
+    await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject,
       html: template,
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ Email sent successfully to ${email}`);
+    });
+    console.log(`:white_check_mark: Email sent successfully to ${email}`);
   } catch (error: any) {
     console.error("Error sending email:", error.response || error);
     throw new ErrorHandler(500, "Failed to send email");
