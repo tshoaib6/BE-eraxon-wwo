@@ -1,5 +1,5 @@
 # Use the official Node.js v22 image
-FROM node:22.12.0
+FROM node:22-alpine AS builder
 
 # Set the working directory inside the container
 WORKDIR /app

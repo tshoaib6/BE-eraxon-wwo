@@ -12,7 +12,9 @@ app.use(express.json());
 
 // Custom CORS middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173'); // Replace with your frontend URL
+  // res.setHeader('Access-Control-Allow-Origin', 'http://18.234.186.13'); // Replace with your frontend URL
+  res.setHeader('Access-Control-Allow-Origin', '  http://localhost:5173'); // Replace with your frontend URL
+
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Max-Age', '1800');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
