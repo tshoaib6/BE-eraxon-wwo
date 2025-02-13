@@ -1,32 +1,3 @@
-// import nodemailer from 'nodemailer';
-// import ErrorHandler from '../utils/errorHandler';
-
-// export const sendVerificationEmail = async (email: string, token: string) => {
-//   try {
-//     const transporter = nodemailer.createTransport({
-//       service: 'gmail',
-//       auth: {
-//         user: process.env.EMAIL_USER,
-//         pass: process.env.EMAIL_PASS, 
-//       },
-//     });
-
-//     const verificationLink = `${process.env.FRONT_END_URL}/verify-email?token=${token}`;
-//     console.log('Lin',process.env.FRONT_END_URL)
-//     const mailOptions = {
-//       from: process.env.EMAIL_USER,
-//       to: email,
-//       subject: 'Email Verification',
-//       html: `<h1>Email Verification</h1><p>Please click the link below to verify your email:</p><a href="${verificationLink}">Verify Email</a>`,
-//     };
-
-//     await transporter.sendMail(mailOptions);
-//   } catch (error) {
-//     throw new ErrorHandler(500, 'Failed to send verification email');
-//   }
-// };
-
-
 import nodemailer from 'nodemailer';
 import fs from 'fs';
 import path from 'path';
@@ -41,16 +12,24 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     // Create the verification link
     const verificationLink = `${process.env.FRONT_END_URL}/verify-email?token=${token}`;
 
-    // Replace the token placeholder with the actual link
+    // Replace the token placeholder
     const htmlContent = template.replace('{{verificationLink}}', verificationLink);
 
-    // Set up nodemailer transport
+    // Updated Hostinger SMTP configuration
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.hostinger.com', // Hostinger's SMTP server
+      port: 465, // Recommended secure port
+      secure: true, // Use SSL
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, 
+        user: process.env.EMAIL_USER, // Your Hostinger email address
+        pass: process.env.EMAIL_PASS, // Your Hostinger email password
       },
+      debug: true,
+      logger: true,
+      tls: {
+        // For local development only (bypass SSL verification)
+        rejectUnauthorized: false
+      }
     });
 
     // Mail options
@@ -58,7 +37,7 @@ export const sendVerificationEmail = async (email: string, token: string) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: 'Email Verification',
-      html: htmlContent, // Use the modified HTML content
+      html: htmlContent,
     };
 
     // Send the email
