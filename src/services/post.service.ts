@@ -1,4 +1,3 @@
-
 // import Post from '../models/post.model'; // Assuming you have the Post model
 
 // // Updated interface to include userId and content
@@ -18,47 +17,37 @@
 //   return await newPost.save();
 // };
 
-
-// above code is without multer 
-
-
-
-
-
-
-
-
-
-
+// above code is without multer
 
 // below code have functionality of multer
-import Post from '../models/post.model'; 
-import { sendEmail } from '../utils/email';
-import User from '../models/user.model';
-
+import Post from "../models/post.model";
+import { sendEmail } from "../utils/email";
+import User from "../models/user.model";
 
 interface PostData {
-    userId: string; 
-    content: string;
-    mediaUrl?: string[];
-    communityId?: string;
-
+  userId: string;
+  content: string;
+  mediaUrl?: string[];
+  communityId?: string;
 }
 
-export const createPostService = async (postData: PostData , email:string) => {
-const user = await User.findOne({email})
-if(!user){
-    throw new Error ("email not found")
-}
-const newPost = new Post({
-        userId: postData.userId, 
-        content: postData.content,
-        mediaUrl:postData.mediaUrl ,
-        communityId:postData.communityId
+export const createPostService = async (postData: PostData, email: string) => {
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new Error("email not found");
+  }
+  const newPost = new Post({
+    userId: postData.userId,
+    content: postData.content,
+    mediaUrl: postData.mediaUrl,
+    communityId: postData.communityId,
+  });
 
+  await sendEmail(
+    user.email,
+    "Post Published Successfully",
+    "../views/postCreated.templete.html"
+  );
 
-    });
-    
-    await sendEmail(user.email,"post published successfully",'../views/postCreated.templete.html',"")
-    return await newPost.save();
+  return await newPost.save();
 };
