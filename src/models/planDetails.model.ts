@@ -4,6 +4,7 @@ import { IUser } from '../interfaces/user.interface';
 interface IPlanDetails extends Document {
   planName: string;
   planPrice: string;
+  planDesc:string;
   planFeatures: string[]; // Array of features (strings)
   user: mongoose.Types.ObjectId; // Reference to the User schema
   createdAt: Date;
@@ -14,6 +15,8 @@ const PlanDetailsSchema: Schema<IPlanDetails> = new Schema(
   {
     planName: { type: String, required: false, trim: true },
     planPrice: { type: String, required: false, trim: true },
+    planDesc: { type: String, required: false, trim: true },
+
     planFeatures: { type: [String], required: true }, // Array of strings for features
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false }, // Reference to User schema
   },

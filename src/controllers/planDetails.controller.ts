@@ -4,12 +4,13 @@ import PlanDetails from '../models/planDetails.model';
 // POST API - Create a new Plan
 export const createPlan = async (req: Request, res: Response) => {
   try {
-    const { planName, planPrice, planFeatures } = req.body;
+    const { planName, planPrice,planDesc, planFeatures } = req.body;
 
     // Create a new plan
     const newPlan = new PlanDetails({
       planName,
       planPrice,
+      planDesc,
       planFeatures
     });
 
