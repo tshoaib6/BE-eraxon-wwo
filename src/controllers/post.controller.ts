@@ -10,7 +10,7 @@ import multer = require("multer");
 import Notification from '../models/notification.model'; // Adjust the path accordingly
 import { getSocket } from '../socket'
 import { sendEmail } from "../utils/email";
-
+import User from "../models/user.model";
 // // Extend Request to include file path
 // interface MulterRequest extends Request {
 //   files?: Express.Multer.File[] | { [fieldname: string]: Express.Multer.File[] }; // Allow multiple files as an array or an object
@@ -168,7 +168,9 @@ interface NotificationPayload {
   type: string;
   status: string;
   createdAt: Date;
+  user?: { profilePic: string }; // ✅ Added profilePic field
 }
+
 
 export const createPost = async (
   req: Request,
@@ -237,6 +239,7 @@ export const createPost = async (
       path: "userId",
       select: "firstName lastName profilePic", // Fields to populate
     });
+    const user = await User.findById(userId).select("profilePic");
 
     // Create a new notification for the post creation
     const notification = new Notification({
@@ -262,6 +265,9 @@ export const createPost = async (
         type: notification.type,
         status: notification.status,
         createdAt: notification.createdAt,
+        user: {
+          profilePic: user?.profilePic || "", // ✅ Added profilePic to notification
+        },
       };
 
       // Emit the notification with the correct type
@@ -290,7 +296,9 @@ export const createPost = async (
 
 
 
-// The getPosts function remains unchanged
+
+
+
 export const getPosts = async (
   req: Request,
   res: Response
