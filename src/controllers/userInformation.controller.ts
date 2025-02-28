@@ -54,7 +54,7 @@ export const getUserInformation = async (req: Request, res: Response) => {
     const userInfo = await UserInformation.findOne({ user: userId });
 
     if (!userInfo) {
-      return res.status(404).json({ message: 'User information not found' });
+      return res.status(204).json({ message: 'User information not found' });
     }
 
     res.status(200).json(userInfo);
