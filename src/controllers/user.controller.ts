@@ -82,8 +82,8 @@ if (socket) {
 
     return res.status(201).json({ message: 'User registered. Verification email sent.' });
   } catch (error) {
-    console.error('Signup error:', error);
-
+    // console.error('Signup error:', error);
+console.log("error in registering user")
     // Handle error correctly by sending a response with a valid status code
     if (error instanceof Error) {
       return res.status(500).json({ message: error.message });
