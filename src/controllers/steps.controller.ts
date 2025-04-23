@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Step from "../models/stepform.model";
 import { extractUserIdFromToken } from "../utils/extractUserIdFromToken";
 import CombinedForm from "../models/stepform.model";
+import { v2 as cloudinary } from 'cloudinary';
 
 interface UploadedFiles {
   memberImage?: Express.Multer.File[];
@@ -23,7 +24,7 @@ interface ParsedData {
   };
   memorialServices?: object;
   personalDetails?: object;
-  mediaFiles?: { file?: string; date?: string; note?: string }[];
+  mediaFiles?: { file?: string; date?: string; note?: string;   base64?: string  }[];
   status?: string;
 }
 
@@ -39,6 +40,7 @@ export const createOrUpdateStep = async (
 ): Promise<Response> => {
   console.log("Request Body:", req.body);
   console.log("Uploaded Files:", req.files);
+ 
   try {
     const token =
       req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
@@ -47,9 +49,7 @@ export const createOrUpdateStep = async (
     );
 
     if (!userId) {
-      return res
-        .status(401)
-        .json({ message: "Authorization token is required" });
+      return res.status(401).json({ message: "Authorization token is required" });
     }
 
     let parsedData: ParsedData;
@@ -67,34 +67,44 @@ export const createOrUpdateStep = async (
 
     const survivingFamily = parsedData.family?.survivingFamily || [];
     const predeceasedFamily = parsedData.family?.predeceasedFamily || [];
-    const mediaFiles = Array.isArray(parsedData.mediaFiles)
-      ? parsedData.mediaFiles
-      : []; // Ensure mediaFiles is always an array
-
-    console.log("Surviving family:", survivingFamily);
+    const mediaFiles = Array.isArray(parsedData.mediaFiles) ? parsedData.mediaFiles : [];
 
     const uploadedFiles: UploadedFiles = (req.files as UploadedFiles) || {};
     const memberImages = uploadedFiles.memberImage || [];
-    const files = uploadedFiles.file || [];
-    console.log("File Images from frontend:", files);
 
-    // Map member images to surviving family members
+    // Handle member images
     const updatedSurvivingFamily = survivingFamily.map((member, index) => ({
       ...member,
       memberImage: memberImages[index]?.path || member?.memberImage || null,
     }));
+
     const updatedPredeceasedFamily = predeceasedFamily.map((member, index) => ({
       ...member,
       memberImage: memberImages[index]?.path || member?.memberImage || null,
     }));
 
-    const updatedmediaFiles = Array.isArray(mediaFiles)
-      ? mediaFiles.map((file, index) => ({
-          ...file,
-          file: files[index]?.path || file?.file || null,
-        }))
-      : [];
+    // Upload base64 media files to Cloudinary
+    const uploadedMediaFiles = await Promise.all(
+      mediaFiles.map(async (file) => {
+        if (file.base64) {
+          try {
+            const result = await cloudinary.uploader.upload(file.base64, {
+              folder: 'stepform/mediaFiles',
+            });
+            return { ...file, file: result.secure_url };
+          } catch (uploadErr) {
+            console.error('Error uploading mediaFile to Cloudinary:', uploadErr);
+            return null;
+          }
+        }
+        return file?.file ? file : null;
+      })
+    );
 
+    // Filter only valid media files
+    const validMediaFiles = uploadedMediaFiles.filter((file) => file && file.file);
+
+    // Upsert the step
     const existingStep = await Step.findOneAndUpdate(
       { userId },
       {
@@ -107,7 +117,7 @@ export const createOrUpdateStep = async (
           },
           memorialServices: parsedData.memorialServices,
           personalDetails: parsedData.personalDetails,
-          mediaFiles: updatedmediaFiles, // Remove spreading and ensure array
+          mediaFiles: validMediaFiles,
           status: parsedData.status || "submitted",
         },
       },
@@ -120,13 +130,14 @@ export const createOrUpdateStep = async (
         : "Steps data created successfully",
       steps: existingStep,
     });
+
   } catch (error) {
     console.error("Error in createOrUpdateStep:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Internal Server Error";
+    const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
     return res.status(500).json({ message: errorMessage });
   }
 };
+
 
 // export const getStepDataByUserID = async (
 //   req: Request,
