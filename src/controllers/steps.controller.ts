@@ -33,7 +33,7 @@ interface RequestWithBody extends Request {
     data?: string;
   };
 }
-
+// correct code 
 export const createOrUpdateStep = async (
   req: RequestWithBody,
   res: Response
@@ -139,78 +139,177 @@ export const createOrUpdateStep = async (
 };
 
 
-// export const getStepDataByUserID = async (
-//   req: Request,
-//   res: Response
-// ): Promise<Response> => {
-//   try {
-//     const token =
-//       req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
-//     if (!token) {
-//       return res
-//         .status(401)
-//         .json({ message: "Authorization token is required" });
-//     }
-
-//     const userId = extractUserIdFromToken(
-//       JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
-//     );
-//     if (!userId) {
-//       return res.status(401).json({ message: "Invalid or expired token" });
-//     }
-
-//     const userStepData = await Step.findOne({ userId });
-
-//     if (!userStepData) {
-//       return res
-//         .status(404)
-//         .json({ message: "No step data found for the user" });
-//     }
-
-//     return res.status(200).json({
-//       message: "Step data retrieved successfully",
-//       steps: userStepData,
-//       status: userStepData.status || "drafted",
-//     });
-//   } catch (error) {
-//     console.error("Error in getStep:", error);
-//     const errorMessage =
-//       error instanceof Error ? error.message : "Internal Server Error";
-//     return res.status(500).json({ message: errorMessage });
-//   }
-// };
-
-
-
-export const getStepDataByUserID = async (req: Request, res: Response): Promise<Response> => {
+export const getStepDataByUserID = async (
+  req: Request,
+  res: Response
+): Promise<Response> => {
   try {
     const token =
       req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
-
     if (!token) {
-      return res.status(401).json({ message: "Authorization token is required" });
+      return res
+        .status(401)
+        .json({ message: "Authorization token is required" });
     }
 
     const userId = extractUserIdFromToken(
       JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
     );
-
     if (!userId) {
-      return res.status(401).json({ message: "Invalid or missing token" });
+      return res.status(401).json({ message: "Invalid or expired token" });
     }
 
-    const stepsData = await Step.findOne({ userId });
+    const userStepData = await Step.findOne({ userId });
 
-    if (!stepsData) {
-      return res.status(204).send("no data found for this user"); // 204 No Content when no data exists
+    if (!userStepData) {
+      return res
+        .status(404)
+        .json({ message: "No step data found for the user" });
     }
 
-    return res.status(200).json({ message: "Steps data fetched successfully", steps: stepsData });
+    return res.status(200).json({
+      message: "Step data retrieved successfully",
+      steps: userStepData,
+      status: userStepData.status || "drafted",
+    });
   } catch (error) {
-    console.error("Error in getStepDataByUserID:", error);
-    return res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error in getStep:", error);
+    const errorMessage =
+      error instanceof Error ? error.message : "Internal Server Error";
+    return res.status(500).json({ message: errorMessage });
   }
 };
+
+// only updated that single user can submit multiple record 
+// export const createOrUpdateStep = async (
+//   req: RequestWithBody,
+//   res: Response
+// ): Promise<Response> => {
+//   console.log("Request Body:", req.body);
+//   console.log("Uploaded Files:", req.files);
+
+//   try {
+//     const token =
+//       req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+//     const userId = extractUserIdFromToken(
+//       JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
+//     );
+
+//     if (!userId) {
+//       return res.status(401).json({ message: "Authorization token is required" });
+//     }
+
+//     let parsedData: ParsedData;
+//     if (req.body.data) {
+//       try {
+//         parsedData = JSON.parse(req.body.data);
+//         console.log("Parsed data:", parsedData);
+//       } catch (parseError) {
+//         console.error("Error parsing req.body.data:", parseError);
+//         return res.status(400).json({ message: "Invalid data format" });
+//       }
+//     } else {
+//       return res.status(400).json({ message: "Data field is required" });
+//     }
+
+//     const survivingFamily = parsedData.family?.survivingFamily || [];
+//     const predeceasedFamily = parsedData.family?.predeceasedFamily || [];
+//     const mediaFiles = Array.isArray(parsedData.mediaFiles) ? parsedData.mediaFiles : [];
+
+//     const uploadedFiles: UploadedFiles = (req.files as UploadedFiles) || {};
+//     const memberImages = uploadedFiles.memberImage || [];
+
+//     // Handle member images
+//     const updatedSurvivingFamily = survivingFamily.map((member, index) => ({
+//       ...member,
+//       memberImage: memberImages[index]?.path || member?.memberImage || null,
+//     }));
+
+//     const updatedPredeceasedFamily = predeceasedFamily.map((member, index) => ({
+//       ...member,
+//       memberImage: memberImages[index]?.path || member?.memberImage || null,
+//     }));
+
+//     // Upload base64 media files to Cloudinary
+//     const uploadedMediaFiles = await Promise.all(
+//       mediaFiles.map(async (file) => {
+//         if (file.base64) {
+//           try {
+//             const result = await cloudinary.uploader.upload(file.base64, {
+//               folder: 'stepform/mediaFiles',
+//             });
+//             return { ...file, file: result.secure_url };
+//           } catch (uploadErr) {
+//             console.error('Error uploading mediaFile to Cloudinary:', uploadErr);
+//             return null;
+//           }
+//         }
+//         return file?.file ? file : null;
+//       })
+//     );
+
+//     // Filter only valid media files
+//     const validMediaFiles = uploadedMediaFiles.filter((file) => file && file.file);
+
+//     // ⬇️ Create a NEW submission instead of updating existing one
+//     const newStep = new Step({
+//       userId,
+//       basicInfo: parsedData.basicInfo,
+//       family: {
+//         ...parsedData.family,
+//         survivingFamily: updatedSurvivingFamily,
+//         predeceasedFamily: updatedPredeceasedFamily,
+//       },
+//       memorialServices: parsedData.memorialServices,
+//       personalDetails: parsedData.personalDetails,
+//       mediaFiles: validMediaFiles,
+//       status: parsedData.status || "submitted",
+//     });
+
+//     await newStep.save();
+
+//     return res.status(201).json({
+//       message: "New steps data created successfully",
+//       steps: newStep,
+//     });
+
+//   } catch (error) {
+//     console.error("Error in createOrUpdateStep:", error);
+//     const errorMessage = error instanceof Error ? error.message : "Internal Server Error";
+//     return res.status(500).json({ message: errorMessage });
+//   }
+// };
+
+
+// export const getStepDataByUserID = async (req: Request, res: Response): Promise<Response> => {
+//   try {
+//     const token =
+//       req.cookies?.token || req.headers["authorization"]?.split(" ")[1];
+
+//     if (!token) {
+//       return res.status(401).json({ message: "Authorization token is required" });
+//     }
+
+//     const userId = extractUserIdFromToken(
+//       JSON.parse(Buffer.from(token.split(".")[1], "base64").toString())
+//     );
+
+//     if (!userId) {
+//       return res.status(401).json({ message: "Invalid or missing token" });
+//     }
+
+//     const stepsData = await Step.findOne({ userId });
+
+//     if (!stepsData) {
+//       return res.status(204).send("no data found for this user"); // 204 No Content when no data exists
+//     }
+
+//     return res.status(200).json({ message: "Steps data fetched successfully", steps: stepsData });
+//   } catch (error) {
+//     console.error("Error in getStepDataByUserID:", error);
+//     return res.status(500).json({ message: "Internal Server Error" });
+//   }
+// };
 
 
 
@@ -225,7 +324,7 @@ export const getStep = async (
 
     // Fetch all step data with pagination
     const allSteps = await Step.find().select(
-      "basicInfo status personalDetails"
+      "basicInfo status personalDetails mediaFiles"
     );
 
     if (!allSteps || allSteps.length === 0) {
