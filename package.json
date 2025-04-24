@@ -4,7 +4,9 @@
   "license": "MIT",
   "scripts": {
     "start": "nodemon --exec ts-node server.ts",
-    "lint": "eslint . --ext .ts"
+    "lint": "eslint . --ext .ts",
+    "build": "tsc"
+    
   },
   "private": true,
   "dependencies": {
