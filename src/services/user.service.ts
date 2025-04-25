@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.model";
 import ErrorHandler from "../utils/errorHandler";
-import { sendVerificationEmail } from "./email.service";
 import { IUser } from "../interfaces/user.interface";
 import { LoginResponse } from "../types";
 import { sendEmail } from "../utils/email";
@@ -35,14 +34,13 @@ export const signUpUser = async (
   });
 
   await user.save();
-
+  const verificationLink = `${process.env.FRONT_END_URL}/verify-email?token=${verificationToken}`;
+  console.log("Verification link:", verificationLink);
   await sendEmail(
     user.email,
     "Email Verification",
     "../views/verifyEmail.templete.html",
-    {
-      verificationLink: `${process.env.FRONT_END_URL}/verify-email?token=${verificationToken}`,
-    }
+    { verificationLink }
   );
   return user;
 };
@@ -58,7 +56,7 @@ export const verifyUserEmail = async (token: string): Promise<IUser> => {
       email: decoded.email,
       verificationToken: token,
     });
-
+console.log("user data from user service file",user)
     if (!user || user.verificationTokenExpiry < new Date()) {
       throw new ErrorHandler(400, "Invalid or expired token");
     }

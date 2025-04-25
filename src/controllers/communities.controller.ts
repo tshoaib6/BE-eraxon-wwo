@@ -18,6 +18,36 @@ export const getAllCommunities = async (
 
 
 
+export const createCommunity = async (req: Request, res: Response) => {
+  try {
+    // Extract the data from the request body
+    const { communityId, communityName, profilePic, members, userId } = req.body;
+
+    // Create a new community (use a dummy userId for now)
+    const newCommunity = new Community({
+      communityId,
+      communityName,
+      profilePic,
+      members,
+      userId: userId || "dummyUserId123" // Use a dummy userId if not provided
+    });
+
+    // Save the new community to the database
+    await newCommunity.save();
+
+    // Return a success response
+    res.status(201).json({
+      message: "Community created successfully",
+      community: newCommunity
+    });
+  } catch (error) {
+    // Handle any errors
+    const err = error as Error; // Type assertion to ensure error is treated as an Error object
+    res.status(500).json({ message: "Server Error", error: err.message });
+  }
+};
+
+
 // without cursor pagination 
 
 // export const getPostsByCommunityId = async (req: Request, res: Response) => {

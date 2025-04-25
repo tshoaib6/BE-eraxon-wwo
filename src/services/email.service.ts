@@ -69,62 +69,62 @@
 //   }
 // };
 
-import nodemailer from "nodemailer";
-import fs from "fs";
-import path from "path";
-import dotenv from "dotenv";
-import SMTPTransport from "nodemailer/lib/smtp-transport";
-import ErrorHandler from "../utils/errorHandler";
+// import nodemailer from "nodemailer";
+// import fs from "fs";
+// import path from "path";
+// import dotenv from "dotenv";
+// import SMTPTransport from "nodemailer/lib/smtp-transport";
+// import ErrorHandler from "../utils/errorHandler";
 
-dotenv.config();
+// dotenv.config();
 
-export const sendVerificationEmail = async (email: string, token: string) => {
-  try {
-    console.log("SMTP User:", process.env.EMAIL_USER);
-    console.log(
-      "SMTP Password:",
-      process.env.EMAIL_PASS ? "Loaded" : "Not Loaded"
-    );
-    console.log("SMTP Port:", process.env.SMTP_PORT);
+// export const sendVerificationEmail = async (email: string, token: string) => {
+//   try {
+//     console.log("SMTP User:", process.env.EMAIL_USER);
+//     console.log(
+//       "SMTP Password:",
+//       process.env.EMAIL_PASS ? "Loaded" : "Not Loaded"
+//     );
+//     console.log("SMTP Port:", process.env.SMTP_PORT);
 
-    const templatePath = path.resolve(
-      __dirname,
-      "../views/verifyEmail.templete.html"
-    );
-    const template = fs.readFileSync(templatePath, "utf-8");
-    const verificationLink = `${process.env.FRONT_END_URL}/verify-email?token=${token}`;
-    const htmlContent = template.replace(
-      "{{verificationLink}}",
-      verificationLink
-    );
+//     const templatePath = path.resolve(
+//       __dirname,
+//       "../views/verifyEmail.templete.html"
+//     );
+//     const template = fs.readFileSync(templatePath, "utf-8");
+//     const verificationLink = `${process.env.FRONT_END_URL}/verify-email?token=${token}`;
+//     const htmlContent = template.replace(
+//       "{{verificationLink}}",
+//       verificationLink
+//     );
 
-    // Updated transporter configuration
-    const transporter = nodemailer.createTransport({
-      host: "smtp.hostinger.com",
-      port: 465,
-      secure: true,
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      logger: true, // Logs SMTP traffic
-      debug: true, // Outputs debug messages
-    } as SMTPTransport.Options);
+//     // Updated transporter configuration
+//     const transporter = nodemailer.createTransport({
+//       host: "smtp.hostinger.com",
+//       port: 465,
+//       secure: true,
+//       auth: {
+//         user: process.env.EMAIL_USER,
+//         pass: process.env.EMAIL_PASS,
+//       },
+//       logger: true, // Logs SMTP traffic
+//       debug: true, // Outputs debug messages
+//     } as SMTPTransport.Options);
 
-    await transporter.verify();
-    console.log("✅ SMTP connection successful!");
+//     await transporter.verify();
+//     console.log("✅ SMTP connection successful!");
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Email Verification",
-      html: htmlContent,
-    };
+//     const mailOptions = {
+//       from: process.env.EMAIL_USER,
+//       to: email,
+//       subject: "Email Verification",
+//       html: htmlContent,
+//     };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`✅ Verification email sent to ${email}`);
-  } catch (error: any) {
-    console.error("Error sending email:", error.response || error);
-    throw new ErrorHandler(500, "Failed to send verification email");
-  }
-};
+//     await transporter.sendMail(mailOptions);
+//     console.log(`✅ Verification email sent to ${email}`);
+//   } catch (error: any) {
+//     console.error("Error sending email:", error.response || error);
+//     throw new ErrorHandler(500, "Failed to send verification email");
+//   }
+// };
