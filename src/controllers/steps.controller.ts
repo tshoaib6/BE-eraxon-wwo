@@ -312,7 +312,6 @@ export const getStepDataByUserID = async (
 // };
 
 
-
 export const getStep = async (
   req: Request,
   res: Response
@@ -322,25 +321,22 @@ export const getStep = async (
     const limit = parseInt(req.query.limit as string) || 10;
     const skip = (page - 1) * limit;
 
-    // Fetch all step data with pagination
-    const allSteps = await Step.find().select(
+    // Fetch only 'submitted' steps with pagination logic
+    const allSteps = await Step.find({ status: "submitted" }).select(
       "basicInfo status personalDetails mediaFiles"
     );
 
     if (!allSteps || allSteps.length === 0) {
-      return res.status(404).json({ message: "No step data found" });
+      return res.status(404).json({ message: "No submitted step data found" });
     }
 
-    // Shuffle the results randomly
+    // Shuffle and paginate
     const shuffledSteps = allSteps.sort(() => 0.5 - Math.random());
-
-    // Slice the shuffled results to implement pagination
     const paginatedSteps = shuffledSteps.slice(skip, skip + limit);
-
     const totalRecords = allSteps.length;
 
     return res.status(200).json({
-      message: "Step data retrieved successfully",
+      message: "Submitted step data retrieved successfully",
       steps: paginatedSteps,
       pagination: {
         currentPage: page,
@@ -355,6 +351,7 @@ export const getStep = async (
     return res.status(500).json({ message: errorMessage });
   }
 };
+
 
 export const getRecordById = async (
   req: Request,
